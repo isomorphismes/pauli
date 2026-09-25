@@ -22,31 +22,31 @@ choice coordinate_space one_of
 public export
 record Point3 (number : Type) (space : coordinate_space) where
   constructor Point
-  x : number
-  y : number
-  z : number
+  point_x : number
+  point_y : number
+  point_z : number
 
 public export
 record Direction3 (number : Type) (space : coordinate_space) where
   constructor Direction
-  x : number
-  y : number
-  z : number
+  direction_x : number
+  direction_y : number
+  direction_z : number
 
 -- The differential of a scalar field is a covector.  Do not silently identify
 -- it with a direction before a geometric map has supplied that identification.
 public export
 record Covector3 (number : Type) (space : coordinate_space) where
   constructor Covector
-  x : number
-  y : number
-  z : number
+  covector_x : number
+  covector_y : number
+  covector_z : number
 
 public export
 record Ray (number : Type) (space : coordinate_space) where
   constructor RayFrom
-  origin : Point3 number space
-  direction : Direction3 number space
+  ray_origin : Point3 number space
+  ray_direction : Direction3 number space
 
 public export
 RayParameter : Type → Type
@@ -87,7 +87,7 @@ SurfaceNormalTransformer number =
 public export
 record EyeLocationOnRay (number : Type) where
   constructor EyeAt
-  parameter : RayParameter number
+  eye_parameter : RayParameter number
 
 -- Stussak's RayCreator keeps camera-, clipping-, and surface-space rays tied to
 -- one parameter t.  That idea is useful independently of his Java classes.
@@ -104,8 +104,8 @@ record RayBundle (number : Type) where
 public export
 record ViewSample (number : Type) where
   constructor SampleAt
-  u : number
-  v : number
+  sample_u : number
+  sample_v : number
 
 public export
 RayCreator : Type → Type
@@ -120,8 +120,8 @@ RayCreator number =
 public export
 record RayInterval (number : Type) where
   constructor Between
-  lower : number
-  upper : number
+  interval_lower : number
+  interval_upper : number
 
 public export
 data ClipResult : Type → Type where
@@ -189,9 +189,9 @@ SurfaceDifferentialEvaluator surface_description number =
 public export
 record LevelSetSurface (number : Type) where
   constructor LevelSet
-  level : number
-  field : SurfaceValue number
-  differential : SurfaceDifferential number
+  level_value : number
+  level_field : SurfaceValue number
+  level_differential : SurfaceDifferential number
 
 -- --------------------------------------------------------------------------
 -- Stussak-style algebraic surface specialization
@@ -208,13 +208,13 @@ data Powers3 = Powers Number Number Number
 public export
 record SparseTerm (number : Type) where
   constructor Term
-  coefficient : number
-  powers : Powers3
+  term_coefficient : number
+  term_powers : Powers3
 
 public export
 record SparsePolynomial (number : Type) where
   constructor SparseTerms
-  terms : List (SparseTerm number)
+  polynomial_terms : List (SparseTerm number)
 
 -- This is one surface representation, not the definition of a ray-traceable
 -- surface.  It preserves the useful PreparedSurface idea for algebraic work.
@@ -222,15 +222,15 @@ public export
 record PreparedAlgebraicSurface (number : Type) where
   constructor PreparedAlgebraic
   family_degree : Number
-  surface : SparsePolynomial number
-  gradient_x : SparsePolynomial number
-  gradient_y : SparsePolynomial number
-  gradient_z : SparsePolynomial number
+  algebraic_surface : SparsePolynomial number
+  algebraic_gradient_x : SparsePolynomial number
+  algebraic_gradient_y : SparsePolynomial number
+  algebraic_gradient_z : SparsePolynomial number
 
 public export
 record UnivariatePolynomial (number : Type) where
   constructor Coefficients
-  coefficients : List number
+  univariate_coefficients : List number
 
 public export
 AlgebraicSurfaceSpecializer : Type → Type
@@ -254,14 +254,14 @@ AlgebraicFirstRootFinder number =
 public export
 record Color3 (color_number : Type) where
   constructor RGB
-  red : color_number
-  green : color_number
-  blue : color_number
+  color_red : color_number
+  color_green : color_number
+  color_blue : color_number
 
 public export
 record Material (color_number : Type) where
   constructor SurfaceMaterial
-  color : Color3 color_number
+  material_color : Color3 color_number
   ambient_intensity : color_number
   diffuse_intensity : color_number
   specular_intensity : color_number
@@ -270,9 +270,9 @@ record Material (color_number : Type) where
 public export
 record Light (geometry_number : Type) (color_number : Type) where
   constructor PointLight
-  position : Point3 geometry_number camera_space
-  color : Color3 color_number
-  intensity : color_number
+  light_position : Point3 geometry_number camera_space
+  light_color : Color3 color_number
+  light_intensity : color_number
 
 -- The surface representation is a parameter of the scene.  A level-set field,
 -- a prepared algebraic surface, or a later representation can use the same
@@ -283,7 +283,7 @@ record Scene
     (geometry_number : Type)
     (color_number : Type) where
   constructor SurfaceScene
-  surface : surface_description
+  scene_surface : surface_description
   front_material : Material color_number
   back_material : Material color_number
   background : Color3 color_number
