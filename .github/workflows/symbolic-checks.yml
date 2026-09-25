@@ -1,0 +1,36 @@
+name: symbolic checks
+
+on:
+  pull_request:
+    paths:
+      - "symbolic/**"
+      - ".github/workflows/symbolic-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "symbolic/**"
+      - ".github/workflows/symbolic-checks.yml"
+
+jobs:
+  hydrogen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sage exact checks
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage symbolic/check_hydrogen_states.sage
+
+      - name: Independent SymPy checks
+        run: |
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python symbolic/check_with_sympy.py
