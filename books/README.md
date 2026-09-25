@@ -34,6 +34,9 @@ Stephanie Frank Singer is the closest single blueprint for the project: *Lineari
 - [A. Zee — *Quantum Field Theory in a Nutshell*](zee.md)
 - [Don S. Lemons — *Thermodynamic Weirdness*](don-lemons.md)
 - [Hasok Chang — *Inventing Temperature*](hasok-chang.md)
+- [Eric J. Heller — *Why You Hear What You Hear*](eric-heller.md)
+- [Kenneth N. Stevens — *Acoustic Phonetics*](kenneth-stevens.md)
+- [Mark Kac — *Can One Hear the Shape of a Drum?*](mark-kac.md)
 
 ## Books not personally read
 
