@@ -3,9 +3,8 @@ set -Eeuo pipefail
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 
-classes_dex=${1:-"$repo_root/build/android/classes.dex"}
-native_library=${2:-"$repo_root/build/android/libpauli.so"}
-output=${3:-"$repo_root/build/android/pauli.apk"}
+native_library=${1:-"$repo_root/build/android/libpauli.so"}
+output=${2:-"$repo_root/build/android/pauli.apk"}
 
 abi=${ANDROID_ABI:-armeabi-v7a}
 compile_sdk=${ANDROID_COMPILE_SDK:-36}
@@ -18,10 +17,6 @@ case "$abi" in
         ;;
 esac
 
-[[ -f $classes_dex ]] || {
-    printf 'missing direct classes.dex: %s\n' "$classes_dex" >&2
-    exit 1
-}
 [[ -f $native_library ]] || {
     printf 'missing native library: %s\n' "$native_library" >&2
     exit 1
@@ -73,7 +68,6 @@ aligned="$work/aligned.apk"
     -o "$manifest_apk"
 
 cp "$manifest_apk" "$unaligned"
-zip -q -j "$unaligned" "$classes_dex"
 (
     cd "$work"
     zip -q -u "$unaligned" "lib/$abi/libpauli.so"
