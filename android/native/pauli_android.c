@@ -1,6 +1,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <android/input.h>
+#include <android/log.h>
 #include <android/native_window.h>
 #include <android_native_app_glue.h>
 
@@ -10,6 +11,9 @@
 #include <string.h>
 
 #include "pauli_renderer.h"
+
+#define PAULI_LOG_TAG "PauliNative"
+#define PAULI_LOG(...) __android_log_print(ANDROID_LOG_INFO, PAULI_LOG_TAG, __VA_ARGS__)
 
 struct pauli_android_state {
     struct android_app *app;
@@ -192,6 +196,7 @@ static bool pauli_start_surface(struct pauli_android_state *state) {
 
     state->renderer_started = true;
     state->redraw = true;
+    PAULI_LOG("EGL surface ready: %dx%d GLES %d", width, height, gles_major);
     return true;
 }
 
@@ -279,6 +284,7 @@ static int32_t pauli_handle_input(
         if (fabsf(delta_x) + fabsf(delta_y) > 0.001f) {
             state->moved = true;
             pauli_renderer_drag(delta_x, delta_y);
+            PAULI_LOG("drag: %.6f %.6f", delta_x, delta_y);
             state->redraw = true;
         }
 
@@ -292,6 +298,7 @@ static int32_t pauli_handle_input(
         && state->touching) {
         if (action == AMOTION_EVENT_ACTION_UP && !state->moved) {
             pauli_renderer_cycle_orbital();
+            PAULI_LOG("tap: cycle orbital");
             state->redraw = true;
         }
 
@@ -305,6 +312,7 @@ static int32_t pauli_handle_input(
 
 void android_main(struct android_app *app) {
     app_dummy();
+    PAULI_LOG("native entry");
 
     struct pauli_android_state state;
     memset(&state, 0, sizeof(state));
