@@ -163,15 +163,23 @@ clip_to_unit_sphere
                upper = if first ≤ second then second else first
            in VisibleInterval (Between lower upper)
 
+restrict_interval_to_eye :
+  Double →
+  RayInterval Double →
+  RayInterval Double
+restrict_interval_to_eye eye_parameter (Between lower upper) =
+  if lower < eye_parameter && eye_parameter < upper
+    then Between eye_parameter upper
+    else Between lower upper
+
 visible_interval_for_bundle : RayBundle Double → ClipResult Double
 visible_interval_for_bundle
   (SameParameterRays _ clipping_ray _ (EyeAt eye_parameter)) =
     case clip_to_unit_sphere clipping_ray of
       OutsideClip ⇒ OutsideClip
-      VisibleInterval (Between lower upper) ⇒
-        if lower < eye_parameter && eye_parameter < upper
-          then VisibleInterval (Between eye_parameter upper)
-          else VisibleInterval (Between lower upper)
+      VisibleInterval interval ⇒
+        VisibleInterval
+          (restrict_interval_to_eye eye_parameter interval)
 
 -- --------------------------------------------------------------------------
 -- Generic level-set intersection
