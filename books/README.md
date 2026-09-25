@@ -37,6 +37,7 @@ Stephanie Frank Singer is the closest single blueprint for the project: *Lineari
 - [Eric J. Heller — *Why You Hear What You Hear*](eric-heller.md)
 - [Kenneth N. Stevens — *Acoustic Phonetics*](kenneth-stevens.md)
 - [Mark Kac — *Can One Hear the Shape of a Drum?*](mark-kac.md)
+- [Transnational College of LEX — *Who Is Fourier? A Mathematical Adventure*](who-is-fourier.md) — familiar sounds and pictures before Fourier terminology
 
 ## Books not personally read
 

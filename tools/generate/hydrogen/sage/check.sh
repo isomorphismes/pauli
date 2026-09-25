@@ -6,7 +6,7 @@ script_dir=$(
     pwd
 )
 repo_root=$(
-    CDPATH= cd -- "$script_dir/.."
+    CDPATH= cd -- "$script_dir/../../../.."
     pwd
 )
 cd "$repo_root"
@@ -20,11 +20,14 @@ temporary_directory=$(
 )
 trap 'rm -rf "$temporary_directory"' EXIT INT TERM
 
+sage_directory=tools/generate/hydrogen/sage
+
 run_sage_python() {
     script_path=$1
+    shift
 
     if command -v sage >/dev/null 2>&1; then
-        sage -python "$script_path"
+        sage -python "$script_path" "$@"
         return
     fi
 
@@ -33,7 +36,7 @@ run_sage_python() {
             -v "$repo_root:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python "$script_path"
+            sage -python "$script_path" "$@"
         return
     fi
 
@@ -42,7 +45,7 @@ run_sage_python() {
             -v "$repo_root:/work:ro" \
             -w /work \
             docker.io/sagemath/sagemath:10.8 \
-            sage -python "$script_path"
+            sage -python "$script_path" "$@"
         return
     fi
 
@@ -54,18 +57,15 @@ run_sage_python() {
     exit 1
 }
 
-run_sage_python \
-    symbolic/check_hydrogen_states.py
+run_sage_python "$sage_directory/check_hydrogen_states.py"
+run_sage_python "$sage_directory/check_with_sympy.py"
+run_sage_python "$sage_directory/update_public.py" --check
+run_sage_python "$sage_directory/check_notebook.py"
 
-run_sage_python \
-    symbolic/check_with_sympy.py
-
-run_sage_python \
-    symbolic/export_polar_f64.py \
+run_sage_python "$sage_directory/export_polar_f64.py" \
     > "$temporary_directory/hydrogen_spdf_f64.h"
 
-run_sage_python \
-    symbolic/export_polar_f64_receipts.py \
+run_sage_python "$sage_directory/export_polar_f64_receipts.py" \
     > "$temporary_directory/polar_f64_receipts.tsv"
 
 if grep -Eq \
@@ -73,7 +73,7 @@ if grep -Eq \
     "$temporary_directory/hydrogen_spdf_f64.h"
 then
     printf \
-        '%bFAIL%b: generated runtime evaluator contains Cartesian complex machinery.\n' \
+        '%bFAIL%b: generated runtime evaluator contains rectangular complex machinery.\n' \
         "$red" \
         "$reset" \
         >&2
@@ -96,7 +96,7 @@ cc \
     -Wextra \
     -pedantic \
     -I "$temporary_directory" \
-    symbolic/check_polar_f64_runtime.c \
+    "$sage_directory/check_polar_f64_runtime.c" \
     -lm \
     -o "$temporary_directory/check_polar_f64_runtime"
 
@@ -104,6 +104,6 @@ cc \
     "$temporary_directory/polar_f64_receipts.tsv"
 
 printf \
-    '%bPASS%b: symbolic and polar Complex F64 checks complete.\n' \
+    '%bPASS%b: hydrogen derivation, public artifacts, and polar runtime checks complete.\n' \
     "$green" \
     "$reset"

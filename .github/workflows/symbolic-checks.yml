@@ -1,16 +1,24 @@
-name: symbolic checks
+name: hydrogen checks
 
 on:
   pull_request:
     paths:
-      - "symbolic/**"
+      - "hydrogen.html"
+      - "hydrogen.ipynb"
+      - "books.html"
+      - "books/**"
+      - "tools/generate/hydrogen/**"
       - "runtime/**"
       - ".github/workflows/symbolic-checks.yml"
   push:
     branches:
       - main
     paths:
-      - "symbolic/**"
+      - "hydrogen.html"
+      - "hydrogen.ipynb"
+      - "books.html"
+      - "books/**"
+      - "tools/generate/hydrogen/**"
       - "runtime/**"
       - ".github/workflows/symbolic-checks.yml"
 
@@ -21,21 +29,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sage exact checks
+      - name: Pull Sage image
+        run: docker pull sagemath/sagemath:10.8
+
+      - name: Exact state checks
         run: |
           docker run --rm \
-            -v "$PWD:/work:ro" \
+            -v "$PWD:/work" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python symbolic/check_hydrogen_states.py
+            sage -python tools/generate/hydrogen/sage/check_hydrogen_states.py
 
       - name: Independent SymPy checks
         run: |
           docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python tools/generate/hydrogen/sage/check_with_sympy.py
+
+      - name: Verify generated public HTML
+        run: |
+          docker run --rm \
             -v "$PWD:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python symbolic/check_with_sympy.py
+            sage -python tools/generate/hydrogen/sage/update_public.py --check
+
+      - name: Execute notebook code cells
+        run: |
+          docker run --rm \
+            -v "$PWD:/work:ro" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python tools/generate/hydrogen/sage/check_notebook.py
 
       - name: Generate polar Complex F64 evaluator
         run: |
@@ -45,23 +72,23 @@ jobs:
             -v "$PWD:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python symbolic/export_polar_f64.py \
+            sage -python tools/generate/hydrogen/sage/export_polar_f64.py \
             > "$RUNNER_TEMP/pauli-generated/hydrogen_spdf_f64.h"
 
           docker run --rm \
             -v "$PWD:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python symbolic/export_polar_f64_receipts.py \
+            sage -python tools/generate/hydrogen/sage/export_polar_f64_receipts.py \
             > "$RUNNER_TEMP/pauli-generated/polar_f64_receipts.tsv"
 
-      - name: Reject Cartesian complex runtime machinery
+      - name: Reject rectangular complex runtime machinery
         run: |
           if grep -Eq \
             '(hypot|atan2|\.real|\.imaginary)' \
             "$RUNNER_TEMP/pauli-generated/hydrogen_spdf_f64.h"
           then
-            echo "generated runtime evaluator contains Cartesian complex machinery" >&2
+            echo "generated runtime evaluator contains rectangular complex machinery" >&2
             exit 1
           fi
 
@@ -74,7 +101,7 @@ jobs:
             -Wextra \
             -pedantic \
             -I "$RUNNER_TEMP/pauli-generated" \
-            symbolic/check_polar_f64_runtime.c \
+            tools/generate/hydrogen/sage/check_polar_f64_runtime.c \
             -lm \
             -o "$RUNNER_TEMP/pauli-generated/check_polar_f64_runtime"
 
