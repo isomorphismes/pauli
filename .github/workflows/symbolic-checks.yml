@@ -48,15 +48,13 @@ jobs:
             sagemath/sagemath:10.8 \
             sage -python tools/generate/hydrogen/sage/check_with_sympy.py
 
-      - name: Regenerate public HTML
+      - name: Verify generated public HTML
         run: |
           docker run --rm \
-            -v "$PWD:/work" \
+            -v "$PWD:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python tools/generate/hydrogen/sage/update_public.py
-
-          git diff --exit-code -- hydrogen.html books.html
+            sage -python tools/generate/hydrogen/sage/update_public.py --check
 
       - name: Execute notebook code cells
         run: |
