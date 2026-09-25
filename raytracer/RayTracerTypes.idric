@@ -85,13 +85,22 @@ DirectionMap number source_space target_space =
   Direction3 number target_space
 
 public export
-SurfaceNormalMap : Type → Type
-SurfaceNormalMap number =
+SurfaceNormalTransformer : Type → Type
+SurfaceNormalTransformer number =
   Covector3 number surface_space →
   CameraNormal number
 
+public export
+data EyeLocationOnRay : Type → Type where
+  EyeAt :
+    {number : Type} →
+    RayParameter number →
+    EyeLocationOnRay number
+
 -- Stussak's RayCreator keeps camera-, clipping-, and surface-space rays tied to
 -- one parameter t.  That idea is useful independently of his Java classes.
+-- The normal transformation remains a separate stage rather than a stored
+-- closure inside the bundle.
 public export
 data RayBundle : Type → Type where
   SameParameterRays :
@@ -99,8 +108,7 @@ data RayBundle : Type → Type where
     Ray number camera_space →
     Ray number clipping_space →
     Ray number surface_space →
-    RayParameter number →
-    SurfaceNormalMap number →
+    EyeLocationOnRay number →
     RayBundle number
 
 public export
@@ -336,6 +344,7 @@ public export
 RayTracer : Type → Type → Type → Type
 RayTracer surface_description geometry_number color_number =
   SurfaceIntersector surface_description geometry_number →
+  SurfaceNormalTransformer geometry_number →
   Scene surface_description geometry_number color_number →
   RayBundle geometry_number →
   TraceResult geometry_number color_number
