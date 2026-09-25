@@ -30,6 +30,8 @@ Stephanie Frank Singer is the closest single blueprint for the project: *Lineari
 - [Emmy Noether](emmy-noether.md)
 - [Chris Quigg — *Colloquium: A Century of Noether's Theorem*](quigg-noether.md)
 - [A. Zee — *Quantum Field Theory in a Nutshell*](zee.md)
+- [Don S. Lemons — *Thermodynamic Weirdness*](don-lemons.md)
+- [Hasok Chang — *Inventing Temperature*](hasok-chang.md)
 
 ## Books not personally read
 
