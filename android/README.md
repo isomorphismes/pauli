@@ -11,6 +11,14 @@ The first useful product is simple:
 - do no network work;
 - do no source parsing or symbolic algebra on the phone.
 
+## Current status
+
+This branch defines and stubs the Android delivery boundary. The included smoke renderer proves only lifecycle/input/EGL packaging once built; it deliberately does **not** claim orbital rendering yet. The ray-tracer track can replace that one file without changing the Android shell.
+
+Android NDK NativeActivity reference:
+
+https://developer.android.com/ndk/reference/group/native-activity
+
 ## Runtime boundary
 
 The preferred installed shape is:
@@ -153,6 +161,11 @@ A GLES 3 path is the natural first production path for the current phones. A GLE
 
 ## Page-size compatibility
 
+Current Android guidance:
+
+https://developer.android.com/guide/practices/page-sizes
+
+
 This app contains native code, so 64-bit artifacts must be compatible with 16 KiB Android page sizes.
 
 The native build script uses 16 KiB-compatible load-segment alignment for `arm64-v8a` and `x86_64`.
@@ -162,6 +175,11 @@ The debug APK keeps native libraries compressed and extracted at install time. T
 A Play/AAB release lane should separately verify current bundle packaging requirements.
 
 ## Target SDK
+
+Current Google Play target-API requirements:
+
+https://developer.android.com/google/play/requirements/target-sdk
+
 
 The manifest currently targets API 36.
 
