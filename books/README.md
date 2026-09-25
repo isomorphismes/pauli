@@ -8,22 +8,28 @@ The common standard is:
 
 The books and authors in the main folder are ones the repository owner has personally asked to keep close. They are not all about hydrogen or quantum mechanics. Some are here because their **style of explanation** is the model: geometry before coordinate tricks, symmetry before labels, and physical meaning before formula manipulation.
 
+## House style
+
+Read [the repository house style](house-style.md) before writing explanatory prose. It turns the books below into concrete rules and examples rather than vague influence.
+
+Stephanie Frank Singer is the closest single blueprint for the project: *Linearity, Symmetry, and Prediction in the Hydrogen Atom* is nearly the same destination and organizing idea as `pauli`.
+
 ## Main references
 
+- [Stephanie Frank Singer — *Symmetry in Mechanics* and *Linearity, Symmetry, and Prediction in the Hydrogen Atom*](stephanie-frank-singer.md) — central blueprint
 - [Jeremy Gray — *Change and Variations*](jeremy-gray.md)
 - [Jesper Lützen — *Joseph Liouville 1809–1882*](jesper-lutzen.md)
 - [Gerald B. Folland — *Quantum Field Theory: A Tourist Guide for Mathematicians*](folland.md)
-- [A. Zee — *Quantum Field Theory in a Nutshell*](zee.md)
-- [Hong-Mo Chan and Sheung Tsun Tsou — *Some Elementary Gauge Theory Concepts*](chan-tsou.md)
 - [Michael Monastyrsky — *Riemann, Topology, and Physics*](monastyrsky.md)
-- [William Fulton and Joe Harris — *Representation Theory: A First Course*](fulton-harris.md)
-- [Stephanie Frank Singer — *Symmetry in Mechanics* and *Linearity, Symmetry, and Prediction in the Hydrogen Atom*](stephanie-frank-singer.md)
 - [William Lionel Burke](william-l-burke.md)
+- [David Hestenes — Oersted Medal Lecture: *Reforming the Mathematical Language of Physics*](hestenes-oersted.md)
+- [William Fulton and Joe Harris — *Representation Theory: A First Course*](fulton-harris.md)
+- [Hong-Mo Chan and Sheung Tsun Tsou — *Some Elementary Gauge Theory Concepts*](chan-tsou.md)
 - [Richard Montgomery](richard-montgomery.md)
 - [Eva Miranda](eva-miranda.md)
 - [Emmy Noether](emmy-noether.md)
 - [Chris Quigg — *Colloquium: A Century of Noether's Theorem*](quigg-noether.md)
-- [David Hestenes — Oersted Medal Lecture: *Reforming the Mathematical Language of Physics*](hestenes-oersted.md)
+- [A. Zee — *Quantum Field Theory in a Nutshell*](zee.md)
 
 ## Books not personally read
 
