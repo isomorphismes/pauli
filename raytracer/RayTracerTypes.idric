@@ -1,0 +1,290 @@
+module RayTracerTypes
+
+%default total
+%unbound_implicits off
+
+-- Type-system sketch for a Pauli ray tracer.
+--
+-- This intentionally stops before numerical implementation.  The purpose of
+-- the first Idriç pass is to make the important distinctions visible in types:
+-- coordinate spaces, points versus directions, surface differentials versus
+-- normals, the shared ray parameter, and the PreparedSurface handoff.
+
+-- Current Idriç choice syntax is useful for small closed semantic alternatives.
+public export
+choice coordinate_space one_of
+  camera_space
+  clipping_space
+  surface_space
+
+public export
+choice root_method one_of
+  linear_closed_form
+  sign_variation_subdivision
+
+-- The numerical representation is a parameter for now.  This lets the type
+-- sketch settle before choosing an F16/F32 policy for the actual renderer.
+
+public export
+data Point3 : Type → coordinate_space → Type where
+  Point :
+    {number : Type} →
+    {space : coordinate_space} →
+    number → number → number →
+    Point3 number space
+
+public export
+data Direction3 : Type → coordinate_space → Type where
+  Direction :
+    {number : Type} →
+    {space : coordinate_space} →
+    number → number → number →
+    Direction3 number space
+
+-- The gradient of a scalar surface is a covector.  Do not silently identify it
+-- with a direction before the normal transformation has supplied the needed
+-- geometric identification.
+public export
+data Covector3 : Type → coordinate_space → Type where
+  Covector :
+    {number : Type} →
+    {space : coordinate_space} →
+    number → number → number →
+    Covector3 number space
+
+public export
+data Ray : Type → coordinate_space → Type where
+  RayFrom :
+    {number : Type} →
+    {space : coordinate_space} →
+    Point3 number space →
+    Direction3 number space →
+    Ray number space
+
+public export
+RayParameter : Type → Type
+RayParameter number = number
+
+-- A semantic map type is enough for the first pass.  It deliberately does not
+-- commit the language-facing model to matrices, quaternions, or any particular
+-- storage representation.
+public export
+CoordinateMap :
+  Type → coordinate_space → coordinate_space → Type
+CoordinateMap number from to =
+  Point3 number from → Point3 number to
+
+public export
+DirectionMap :
+  Type → coordinate_space → coordinate_space → Type
+DirectionMap number from to =
+  Direction3 number from → Direction3 number to
+
+public export
+SurfaceNormalMap : Type → Type
+SurfaceNormalMap number =
+  Covector3 number surface_space →
+  Direction3 number camera_space
+
+-- Stussak's RayCreator has an important conceptual invariant worth retaining:
+-- the camera, clipping, and surface-space rays all use the same parameter t.
+-- Bundling them makes that invariant explicit before any numerical code exists.
+public export
+data RayBundle : Type → Type where
+  SameParameterRays :
+    {number : Type} →
+    Ray number camera_space →
+    Ray number clipping_space →
+    Ray number surface_space →
+    RayParameter number →
+    SurfaceNormalMap number →
+    RayBundle number
+
+public export
+data ViewSample : Type → Type where
+  SampleAt :
+    {number : Type} →
+    number → number →
+    ViewSample number
+
+public export
+RayCreator : Type → Type
+RayCreator number =
+  ViewSample number → RayBundle number
+
+-- --------------------------------------------------------------------------
+-- Algebraic surface handoff
+-- --------------------------------------------------------------------------
+
+public export
+data Powers3 = Powers Number Number Number
+
+public export
+data SparseTerm : Type → Type where
+  Term :
+    {number : Type} →
+    number →
+    Powers3 →
+    SparseTerm number
+
+public export
+data SparsePolynomial : Type → Type where
+  SparseTerms :
+    {number : Type} →
+    List (SparseTerm number) →
+    SparsePolynomial number
+
+-- PreparedSurface is deliberately a numerical boundary rather than the
+-- symbolic language itself.  The surface polynomial and its three partial
+-- derivatives arrive already prepared for the renderer.
+public export
+data PreparedSurface : Type → Type where
+  Prepared :
+    {number : Type} →
+    Number →
+    SparsePolynomial number →
+    SparsePolynomial number →
+    SparsePolynomial number →
+    SparsePolynomial number →
+    PreparedSurface number
+
+public export
+data UnivariatePolynomial : Type → Type where
+  Coefficients :
+    {number : Type} →
+    List number →
+    UnivariatePolynomial number
+
+public export
+data RayInterval : Type → Type where
+  Between :
+    {number : Type} →
+    number →
+    number →
+    RayInterval number
+
+public export
+data ClipResult : Type → Type where
+  OutsideClip :
+    {number : Type} →
+    ClipResult number
+  VisibleInterval :
+    {number : Type} →
+    RayInterval number →
+    ClipResult number
+
+public export
+data FirstHit : Type → Type where
+  NoRoot :
+    {number : Type} →
+    FirstHit number
+  HitAt :
+    {number : Type} →
+    RayParameter number →
+    FirstHit number
+
+public export
+SurfaceSpecializer : Type → Type
+SurfaceSpecializer number =
+  PreparedSurface number →
+  Ray number surface_space →
+  UnivariatePolynomial number
+
+public export
+RayClipper : Type → Type
+RayClipper number =
+  Ray number clipping_space →
+  ClipResult number
+
+public export
+FirstRootFinder : Type → Type
+FirstRootFinder number =
+  root_method →
+  UnivariatePolynomial number →
+  RayInterval number →
+  FirstHit number
+
+public export
+SurfaceDifferential : Type → Type
+SurfaceDifferential number =
+  PreparedSurface number →
+  Point3 number surface_space →
+  Covector3 number surface_space
+
+-- --------------------------------------------------------------------------
+-- Scene and output
+-- --------------------------------------------------------------------------
+
+public export
+data Color3 : Type → Type where
+  RGB :
+    {color_number : Type} →
+    color_number →
+    color_number →
+    color_number →
+    Color3 color_number
+
+public export
+data Material : Type → Type where
+  SurfaceMaterial :
+    {color_number : Type} →
+    Color3 color_number →
+    color_number →
+    color_number →
+    color_number →
+    color_number →
+    Material color_number
+
+public export
+data Light : Type → Type → Type where
+  PointLight :
+    {geometry_number : Type} →
+    {color_number : Type} →
+    Point3 geometry_number camera_space →
+    Color3 color_number →
+    color_number →
+    Light geometry_number color_number
+
+public export
+data Scene : Type → Type → Type where
+  SurfaceScene :
+    {geometry_number : Type} →
+    {color_number : Type} →
+    PreparedSurface geometry_number →
+    Material color_number →
+    Material color_number →
+    Color3 color_number →
+    List (Light geometry_number color_number) →
+    Scene geometry_number color_number
+
+public export
+data TraceResult : Type → Type → Type where
+  Background :
+    {geometry_number : Type} →
+    {color_number : Type} →
+    Color3 color_number →
+    TraceResult geometry_number color_number
+  SurfaceHit :
+    {geometry_number : Type} →
+    {color_number : Type} →
+    RayParameter geometry_number →
+    Point3 geometry_number camera_space →
+    Direction3 geometry_number camera_space →
+    Color3 color_number →
+    TraceResult geometry_number color_number
+
+public export
+Shader : Type → Type → Type
+Shader geometry_number color_number =
+  Scene geometry_number color_number →
+  Point3 geometry_number camera_space →
+  Direction3 geometry_number camera_space →
+  Direction3 geometry_number camera_space →
+  Color3 color_number
+
+public export
+RayTracer : Type → Type → Type
+RayTracer geometry_number color_number =
+  Scene geometry_number color_number →
+  RayBundle geometry_number →
+  TraceResult geometry_number color_number
