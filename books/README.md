@@ -14,6 +14,10 @@ Read [the repository house style](house-style.md) before writing explanatory pro
 
 Stephanie Frank Singer is the closest single blueprint for the project: *Linearity, Symmetry, and Prediction in the Hydrogen Atom* is nearly the same destination and organizing idea as `pauli`.
 
+## Topic paths
+
+- [What is magnetism?](what-is-magnetism/README.md) — PBS Space Time viewing path plus the connection between orbital angular momentum, magnetic moment, the Zeeman effect, and the `m` label
+
 ## Main references
 
 - [Stephanie Frank Singer — *Symmetry in Mechanics* and *Linearity, Symmetry, and Prediction in the Hydrogen Atom*](stephanie-frank-singer.md) — central blueprint
