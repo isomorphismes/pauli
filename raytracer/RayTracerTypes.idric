@@ -6,24 +6,18 @@ module RayTracerTypes
 -- Type-system sketch for a Pauli ray tracer.
 --
 -- This intentionally stops before numerical implementation.  The purpose of
--- the first Idriç pass is to make the important distinctions visible in types:
--- coordinate spaces, points versus directions, surface differentials versus
--- normals, the shared ray parameter, and the PreparedSurface handoff.
+-- the first Idriç pass is to make the important distinctions visible in types
+-- before choosing one particular ray/surface intersection algorithm.
 
--- Current Idriç choice syntax is useful for small closed semantic alternatives.
 public export
 choice coordinate_space one_of
   camera_space
   clipping_space
   surface_space
 
-public export
-choice root_method one_of
-  linear_closed_form
-  sign_variation_subdivision
-
--- The numerical representation is a parameter for now.  This lets the type
--- sketch settle before choosing an F16/F32 policy for the actual renderer.
+-- --------------------------------------------------------------------------
+-- Geometry and Stussak's shared-parameter ray idea
+-- --------------------------------------------------------------------------
 
 public export
 data Point3 : Type → coordinate_space → Type where
@@ -41,9 +35,8 @@ data Direction3 : Type → coordinate_space → Type where
     number → number → number →
     Direction3 number space
 
--- The gradient of a scalar surface is a covector.  Do not silently identify it
--- with a direction before the normal transformation has supplied the needed
--- geometric identification.
+-- The differential of a scalar field is a covector.  Do not silently identify
+-- it with a direction before a geometric map has supplied that identification.
 public export
 data Covector3 : Type → coordinate_space → Type where
   Covector :
@@ -65,30 +58,40 @@ public export
 RayParameter : Type → Type
 RayParameter number = number
 
--- A semantic map type is enough for the first pass.  It deliberately does not
--- commit the language-facing model to matrices, quaternions, or any particular
--- storage representation.
+public export
+ViewDirection : Type → Type
+ViewDirection number =
+  Direction3 number camera_space
+
+public export
+CameraNormal : Type → Type
+CameraNormal number =
+  Direction3 number camera_space
+
+-- These are semantic map types.  The first pass deliberately does not commit
+-- them to matrices, quaternions, closures, or a storage ABI.
 public export
 CoordinateMap :
   Type → coordinate_space → coordinate_space → Type
-CoordinateMap number from to =
-  Point3 number from → Point3 number to
+CoordinateMap number source_space target_space =
+  Point3 number source_space →
+  Point3 number target_space
 
 public export
 DirectionMap :
   Type → coordinate_space → coordinate_space → Type
-DirectionMap number from to =
-  Direction3 number from → Direction3 number to
+DirectionMap number source_space target_space =
+  Direction3 number source_space →
+  Direction3 number target_space
 
 public export
 SurfaceNormalMap : Type → Type
 SurfaceNormalMap number =
   Covector3 number surface_space →
-  Direction3 number camera_space
+  CameraNormal number
 
--- Stussak's RayCreator has an important conceptual invariant worth retaining:
--- the camera, clipping, and surface-space rays all use the same parameter t.
--- Bundling them makes that invariant explicit before any numerical code exists.
+-- Stussak's RayCreator keeps camera-, clipping-, and surface-space rays tied to
+-- one parameter t.  That idea is useful independently of his Java classes.
 public export
 data RayBundle : Type → Type where
   SameParameterRays :
@@ -110,50 +113,12 @@ data ViewSample : Type → Type where
 public export
 RayCreator : Type → Type
 RayCreator number =
-  ViewSample number → RayBundle number
+  ViewSample number →
+  RayBundle number
 
 -- --------------------------------------------------------------------------
--- Algebraic surface handoff
+-- Clipping and generic surface intersection
 -- --------------------------------------------------------------------------
-
-public export
-data Powers3 = Powers Number Number Number
-
-public export
-data SparseTerm : Type → Type where
-  Term :
-    {number : Type} →
-    number →
-    Powers3 →
-    SparseTerm number
-
-public export
-data SparsePolynomial : Type → Type where
-  SparseTerms :
-    {number : Type} →
-    List (SparseTerm number) →
-    SparsePolynomial number
-
--- PreparedSurface is deliberately a numerical boundary rather than the
--- symbolic language itself.  The surface polynomial and its three partial
--- derivatives arrive already prepared for the renderer.
-public export
-data PreparedSurface : Type → Type where
-  Prepared :
-    {number : Type} →
-    Number →
-    SparsePolynomial number →
-    SparsePolynomial number →
-    SparsePolynomial number →
-    SparsePolynomial number →
-    PreparedSurface number
-
-public export
-data UnivariatePolynomial : Type → Type where
-  Coefficients :
-    {number : Type} →
-    List number →
-    UnivariatePolynomial number
 
 public export
 data RayInterval : Type → Type where
@@ -174,8 +139,14 @@ data ClipResult : Type → Type where
     ClipResult number
 
 public export
+RayClipper : Type → Type
+RayClipper number =
+  Ray number clipping_space →
+  ClipResult number
+
+public export
 data FirstHit : Type → Type where
-  NoRoot :
+  NoHit :
     {number : Type} →
     FirstHit number
   HitAt :
@@ -183,33 +154,106 @@ data FirstHit : Type → Type where
     RayParameter number →
     FirstHit number
 
+-- The core tracer does not assume that every surface is polynomial.
+-- A surface representation supplies its own first-intersection operation.
 public export
-SurfaceSpecializer : Type → Type
-SurfaceSpecializer number =
-  PreparedSurface number →
+SurfaceIntersector : Type → Type → Type
+SurfaceIntersector surface_description number =
+  surface_description →
   Ray number surface_space →
-  UnivariatePolynomial number
-
-public export
-RayClipper : Type → Type
-RayClipper number =
-  Ray number clipping_space →
-  ClipResult number
-
-public export
-FirstRootFinder : Type → Type
-FirstRootFinder number =
-  root_method →
-  UnivariatePolynomial number →
   RayInterval number →
   FirstHit number
+
+-- --------------------------------------------------------------------------
+-- General level-set surfaces
+-- --------------------------------------------------------------------------
+
+-- A hydrogen-orbital visualization may derive a real field from a complex
+-- state, for example a density or another chosen observable, and then render a
+-- level set of that field.  That is not generally an algebraic polynomial.
+
+public export
+SurfaceValue : Type → Type
+SurfaceValue number =
+  Point3 number surface_space →
+  number
 
 public export
 SurfaceDifferential : Type → Type
 SurfaceDifferential number =
-  PreparedSurface number →
   Point3 number surface_space →
   Covector3 number surface_space
+
+public export
+data LevelSetSurface : Type → Type where
+  LevelSet :
+    {number : Type} →
+    number →
+    SurfaceValue number →
+    SurfaceDifferential number →
+    LevelSetSurface number
+
+-- --------------------------------------------------------------------------
+-- Stussak-style algebraic surface specialization
+-- --------------------------------------------------------------------------
+
+public export
+choice algebraic_root_method one_of
+  linear_closed_form
+  sign_variation_subdivision
+
+public export
+data Powers3 = Powers Number Number Number
+
+public export
+data SparseTerm : Type → Type where
+  Term :
+    {number : Type} →
+    number →
+    Powers3 →
+    SparseTerm number
+
+public export
+data SparsePolynomial : Type → Type where
+  SparseTerms :
+    {number : Type} →
+    List (SparseTerm number) →
+    SparsePolynomial number
+
+-- This is one surface representation, not the definition of a ray-traceable
+-- surface.  It preserves the useful PreparedSurface idea for algebraic work.
+public export
+data PreparedAlgebraicSurface : Type → Type where
+  PreparedAlgebraic :
+    {number : Type} →
+    Number →
+    SparsePolynomial number →
+    SparsePolynomial number →
+    SparsePolynomial number →
+    SparsePolynomial number →
+    PreparedAlgebraicSurface number
+
+public export
+data UnivariatePolynomial : Type → Type where
+  Coefficients :
+    {number : Type} →
+    List number →
+    UnivariatePolynomial number
+
+public export
+AlgebraicSurfaceSpecializer : Type → Type
+AlgebraicSurfaceSpecializer number =
+  PreparedAlgebraicSurface number →
+  Ray number surface_space →
+  UnivariatePolynomial number
+
+public export
+AlgebraicFirstRootFinder : Type → Type
+AlgebraicFirstRootFinder number =
+  algebraic_root_method →
+  UnivariatePolynomial number →
+  RayInterval number →
+  FirstHit number
 
 -- --------------------------------------------------------------------------
 -- Scene and output
@@ -245,17 +289,21 @@ data Light : Type → Type → Type where
     color_number →
     Light geometry_number color_number
 
+-- The surface representation is a parameter of the scene.  A level-set field,
+-- a prepared algebraic surface, or a later representation can use the same
+-- camera/material/light side of the tracer.
 public export
-data Scene : Type → Type → Type where
+data Scene : Type → Type → Type → Type where
   SurfaceScene :
+    {surface_description : Type} →
     {geometry_number : Type} →
     {color_number : Type} →
-    PreparedSurface geometry_number →
+    surface_description →
     Material color_number →
     Material color_number →
     Color3 color_number →
     List (Light geometry_number color_number) →
-    Scene geometry_number color_number
+    Scene surface_description geometry_number color_number
 
 public export
 data TraceResult : Type → Type → Type where
@@ -269,22 +317,25 @@ data TraceResult : Type → Type → Type where
     {color_number : Type} →
     RayParameter geometry_number →
     Point3 geometry_number camera_space →
-    Direction3 geometry_number camera_space →
+    CameraNormal geometry_number →
     Color3 color_number →
     TraceResult geometry_number color_number
 
 public export
-Shader : Type → Type → Type
-Shader geometry_number color_number =
-  Scene geometry_number color_number →
+Shader : Type → Type → Type → Type
+Shader surface_description geometry_number color_number =
+  Scene surface_description geometry_number color_number →
   Point3 geometry_number camera_space →
-  Direction3 geometry_number camera_space →
-  Direction3 geometry_number camera_space →
+  ViewDirection geometry_number →
+  CameraNormal geometry_number →
   Color3 color_number
 
+-- The whole tracer is a composition boundary: give it the intersection
+-- behavior for the chosen surface representation, then a scene and ray bundle.
 public export
-RayTracer : Type → Type → Type
-RayTracer geometry_number color_number =
-  Scene geometry_number color_number →
+RayTracer : Type → Type → Type → Type
+RayTracer surface_description geometry_number color_number =
+  SurfaceIntersector surface_description geometry_number →
+  Scene surface_description geometry_number color_number →
   RayBundle geometry_number →
   TraceResult geometry_number color_number
