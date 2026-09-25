@@ -4,6 +4,9 @@ from sage.all import (
     exp,
     factorial,
     gen_laguerre,
+    infinity,
+    integral,
+    pi,
     sin,
     spherical_harmonic,
     sqrt,
@@ -17,9 +20,13 @@ def check_state_numbers(energy_level, angular_degree, axis_component):
     if energy_level < 1:
         raise ValueError("energy_level must be at least 1")
     if angular_degree < 0 or angular_degree >= energy_level:
-        raise ValueError("angular_degree must satisfy 0 <= angular_degree < energy_level")
+        raise ValueError(
+            "angular_degree must satisfy 0 <= angular_degree < energy_level"
+        )
     if abs(axis_component) > angular_degree:
-        raise ValueError("axis_component must satisfy abs(axis_component) <= angular_degree")
+        raise ValueError(
+            "axis_component must satisfy abs(axis_component) <= angular_degree"
+        )
 
 
 def bound_state_energy(energy_level):
@@ -58,7 +65,9 @@ def angular_mode(angular_degree, axis_component):
     if angular_degree < 0:
         raise ValueError("angular_degree must be nonnegative")
     if abs(axis_component) > angular_degree:
-        raise ValueError("axis_component must satisfy abs(axis_component) <= angular_degree")
+        raise ValueError(
+            "axis_component must satisfy abs(axis_component) <= angular_degree"
+        )
 
     return spherical_harmonic(
         angular_degree,
@@ -101,7 +110,10 @@ def angular_equation_residual(angular_degree, axis_component):
     angular = angular_mode(angular_degree, axis_component)
 
     sphere_laplacian = (
-        diff(sin(polar_angle) * diff(angular, polar_angle), polar_angle)
+        diff(
+            sin(polar_angle) * diff(angular, polar_angle),
+            polar_angle,
+        )
         / sin(polar_angle)
         + diff(angular, azimuth, 2) / sin(polar_angle) ** 2
     )
@@ -125,7 +137,10 @@ def stationary_equation_residual(
     energy = bound_state_energy(energy_level)
 
     sphere_laplacian = (
-        diff(sin(polar_angle) * diff(state, polar_angle), polar_angle)
+        diff(
+            sin(polar_angle) * diff(state, polar_angle),
+            polar_angle,
+        )
         / sin(polar_angle)
         + diff(state, azimuth, 2) / sin(polar_angle) ** 2
     )
@@ -143,14 +158,103 @@ def stationary_equation_residual(
     )
 
 
+def radial_inner_product(
+    first_energy_level,
+    second_energy_level,
+    angular_degree,
+):
+    first = radial_mode(first_energy_level, angular_degree)
+    second = radial_mode(second_energy_level, angular_degree)
+
+    return simplify_identity(
+        integral(
+            first * second * radius**2,
+            radius,
+            0,
+            infinity,
+        )
+    )
+
+
+def angular_conjugate(angular_degree, axis_component):
+    return simplify_identity(
+        QQ(-1) ** axis_component
+        * angular_mode(
+            angular_degree,
+            -axis_component,
+        )
+    )
+
+
+def angular_inner_product(
+    first_angular_degree,
+    first_axis_component,
+    second_angular_degree,
+    second_axis_component,
+):
+    first_conjugate = angular_conjugate(
+        first_angular_degree,
+        first_axis_component,
+    )
+    second = angular_mode(
+        second_angular_degree,
+        second_axis_component,
+    )
+
+    after_azimuth = integral(
+        first_conjugate * second,
+        azimuth,
+        0,
+        2 * pi,
+    )
+
+    return simplify_identity(
+        integral(
+            after_azimuth * sin(polar_angle),
+            polar_angle,
+            0,
+            pi,
+        )
+    )
+
+
+def unique_radial_modes(max_energy_level=4):
+    return [
+        (energy_level, angular_degree)
+        for energy_level in range(1, max_energy_level + 1)
+        for angular_degree in range(
+            min(energy_level - 1, 3) + 1
+        )
+    ]
+
+
+def angular_modes(max_angular_degree=3):
+    return [
+        (angular_degree, axis_component)
+        for angular_degree in range(max_angular_degree + 1)
+        for axis_component in range(
+            -angular_degree,
+            angular_degree + 1,
+        )
+    ]
+
+
 def spdf_states(max_energy_level=4):
     states = []
 
     for energy_level in range(1, max_energy_level + 1):
-        largest_angular_degree = min(energy_level - 1, 3)
+        largest_angular_degree = min(
+            energy_level - 1,
+            3,
+        )
 
-        for angular_degree in range(largest_angular_degree + 1):
-            for axis_component in range(-angular_degree, angular_degree + 1):
+        for angular_degree in range(
+            largest_angular_degree + 1
+        ):
+            for axis_component in range(
+                -angular_degree,
+                angular_degree + 1,
+            ):
                 states.append(
                     (
                         energy_level,
