@@ -53,6 +53,7 @@ jobs:
           key: idric-linux-51e3892d4de59943e42e65c60a9814aba792c5d4
 
       - name: Bootstrap pinned Idriç
+        if: steps.idric-cache.outputs.cache-hit != 'true'
         run: ./.idric-toolchain/edric bootstrap
 
       - name: Save pinned Idriç bootstrap
