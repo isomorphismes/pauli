@@ -66,13 +66,19 @@ So the notebook should derive the associated Legendre problem from the sphere op
 
 The named function is a cross-check and convenient representation, not the starting assumption.
 
-## 5. The radial equation has two obvious endpoint demands
+## 5. Bound and scattering states are different physical questions
 
-The radial coordinate lives on a half-line.
+The Coulomb problem allows more than one kind of state.
 
-A bound state must behave properly at the origin and decay at large radius.
+A bound state describes an electron belonging to the atom rather than an incoming or outgoing scattering state. It is not confined inside a hard wall: its probability density can extend arbitrarily far from the nucleus. What distinguishes the bound stationary states is that they are normalizable and lie in the discrete spectrum below the escape threshold.
 
-Before introducing a named polynomial, factor out those two pieces of behavior:
+Once that physical question is fixed, the radial equation has consequences at both ends of the half-line.
+
+Near the nucleus the acceptable solution cannot have the singular behavior of the rejected branch.
+
+Far from the nucleus, a negative-energy bound solution has a decaying exponential rather than the oscillatory behavior of a scattering state.
+
+Before introducing a named polynomial, factor out the behavior already forced by those two limits:
 
 ```text
 regular power near the origin
@@ -84,9 +90,7 @@ remaining function.
 
 After a dimensionless radius is introduced, the remaining function satisfies the associated Laguerre equation.
 
-Square integrability forces the acceptable series to terminate.
-
-That termination is what leaves a polynomial and restricts the allowed bound-state energies.
+Normalizability then rules out the growing branch. The surviving series terminates, leaving a polynomial and restricting the allowed bound-state energies.
 
 Again, the notebook should derive the recurrence and termination condition first, then identify the result with Sage's generalized Laguerre polynomial.
 
