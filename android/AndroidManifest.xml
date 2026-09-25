@@ -13,13 +13,13 @@
     <application
         android:allowBackup="false"
         android:extractNativeLibs="true"
-        android:hasCode="true"
+        android:hasCode="false"
         android:hardwareAccelerated="true"
         android:label="Pauli"
         android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
 
         <activity
-            android:name=".PauliActivity"
+            android:name="android.app.NativeActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true">
 
