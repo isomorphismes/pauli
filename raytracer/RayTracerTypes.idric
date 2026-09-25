@@ -1,0 +1,327 @@
+module RayTracerTypes
+
+%default total
+%unbound_implicits off
+
+-- Type-system sketch for a Pauli ray tracer.
+--
+-- This intentionally stops before numerical implementation.  The purpose of
+-- the first Idriç pass is to make the important distinctions visible in types
+-- before choosing one particular ray/surface intersection algorithm.
+
+public export
+choice coordinate_space one_of
+  camera_space
+  clipping_space
+  surface_space
+
+-- --------------------------------------------------------------------------
+-- Geometry and Stussak's shared-parameter ray idea
+-- --------------------------------------------------------------------------
+
+public export
+record Point3 (number : Type) (space : coordinate_space) where
+  constructor Point
+  point_x : number
+  point_y : number
+  point_z : number
+
+public export
+record Direction3 (number : Type) (space : coordinate_space) where
+  constructor Direction
+  direction_x : number
+  direction_y : number
+  direction_z : number
+
+-- The differential of a scalar field is a covector.  Do not silently identify
+-- it with a direction before a geometric map has supplied that identification.
+public export
+record Covector3 (number : Type) (space : coordinate_space) where
+  constructor Covector
+  covector_x : number
+  covector_y : number
+  covector_z : number
+
+public export
+record Ray (number : Type) (space : coordinate_space) where
+  constructor RayFrom
+  ray_origin : Point3 number space
+  ray_direction : Direction3 number space
+
+public export
+RayParameter : Type → Type
+RayParameter number = number
+
+public export
+ViewDirection : Type → Type
+ViewDirection number =
+  Direction3 number camera_space
+
+public export
+CameraNormal : Type → Type
+CameraNormal number =
+  Direction3 number camera_space
+
+-- These are semantic map types.  The first pass deliberately does not commit
+-- them to matrices, quaternions, closures, or a storage ABI.
+public export
+CoordinateMap :
+  Type → coordinate_space → coordinate_space → Type
+CoordinateMap number source_space target_space =
+  Point3 number source_space →
+  Point3 number target_space
+
+public export
+DirectionMap :
+  Type → coordinate_space → coordinate_space → Type
+DirectionMap number source_space target_space =
+  Direction3 number source_space →
+  Direction3 number target_space
+
+public export
+SurfaceNormalTransformer : Type → Type
+SurfaceNormalTransformer number =
+  Covector3 number surface_space →
+  CameraNormal number
+
+public export
+record EyeLocationOnRay (number : Type) where
+  constructor EyeAt
+  eye_parameter : RayParameter number
+
+-- Stussak's RayCreator keeps camera-, clipping-, and surface-space rays tied to
+-- one parameter t.  That idea is useful independently of his Java classes.
+-- The normal transformation remains a separate stage rather than a stored
+-- closure inside the bundle.
+public export
+record RayBundle (number : Type) where
+  constructor SameParameterRays
+  camera_ray : Ray number camera_space
+  clipping_ray : Ray number clipping_space
+  surface_ray : Ray number surface_space
+  eye_location : EyeLocationOnRay number
+
+public export
+record ViewSample (number : Type) where
+  constructor SampleAt
+  sample_u : number
+  sample_v : number
+
+public export
+RayCreator : Type → Type
+RayCreator number =
+  ViewSample number →
+  RayBundle number
+
+-- --------------------------------------------------------------------------
+-- Clipping and generic surface intersection
+-- --------------------------------------------------------------------------
+
+public export
+record RayInterval (number : Type) where
+  constructor Between
+  interval_lower : number
+  interval_upper : number
+
+public export
+data ClipResult : Type → Type where
+  OutsideClip :
+    {number : Type} →
+    ClipResult number
+  VisibleInterval :
+    {number : Type} →
+    RayInterval number →
+    ClipResult number
+
+public export
+RayClipper : Type → Type
+RayClipper number =
+  Ray number clipping_space →
+  ClipResult number
+
+public export
+data FirstHit : Type → Type where
+  NoHit :
+    {number : Type} →
+    FirstHit number
+  HitAt :
+    {number : Type} →
+    RayParameter number →
+    FirstHit number
+
+-- The core tracer does not assume that every surface is polynomial.
+-- A surface representation supplies its own first-intersection operation.
+public export
+SurfaceIntersector : Type → Type → Type
+SurfaceIntersector surface_description number =
+  surface_description →
+  Ray number surface_space →
+  RayInterval number →
+  FirstHit number
+
+-- --------------------------------------------------------------------------
+-- General level-set surfaces
+-- --------------------------------------------------------------------------
+
+-- A hydrogen-orbital visualization may derive a real field from a complex
+-- state, for example a density or another chosen observable, and then render a
+-- level set of that field.  That is not generally an algebraic polynomial.
+
+public export
+SurfaceValue : Type → Type
+SurfaceValue number =
+  Point3 number surface_space →
+  number
+
+public export
+SurfaceDifferential : Type → Type
+SurfaceDifferential number =
+  Point3 number surface_space →
+  Covector3 number surface_space
+
+public export
+SurfaceDifferentialEvaluator : Type → Type → Type
+SurfaceDifferentialEvaluator surface_description number =
+  surface_description →
+  Point3 number surface_space →
+  Covector3 number surface_space
+
+public export
+record LevelSetSurface (number : Type) where
+  constructor LevelSet
+  level_value : number
+  level_field : SurfaceValue number
+  level_differential : SurfaceDifferential number
+
+-- --------------------------------------------------------------------------
+-- Stussak-style algebraic surface specialization
+-- --------------------------------------------------------------------------
+
+public export
+choice algebraic_root_method one_of
+  linear_closed_form
+  sign_variation_subdivision
+
+public export
+data Powers3 = Powers Number Number Number
+
+public export
+record SparseTerm (number : Type) where
+  constructor Term
+  term_coefficient : number
+  term_powers : Powers3
+
+public export
+record SparsePolynomial (number : Type) where
+  constructor SparseTerms
+  polynomial_terms : List (SparseTerm number)
+
+-- This is one surface representation, not the definition of a ray-traceable
+-- surface.  It preserves the useful PreparedSurface idea for algebraic work.
+public export
+record PreparedAlgebraicSurface (number : Type) where
+  constructor PreparedAlgebraic
+  family_degree : Number
+  algebraic_surface : SparsePolynomial number
+  algebraic_gradient_x : SparsePolynomial number
+  algebraic_gradient_y : SparsePolynomial number
+  algebraic_gradient_z : SparsePolynomial number
+
+public export
+record UnivariatePolynomial (number : Type) where
+  constructor Coefficients
+  univariate_coefficients : List number
+
+public export
+AlgebraicSurfaceSpecializer : Type → Type
+AlgebraicSurfaceSpecializer number =
+  PreparedAlgebraicSurface number →
+  Ray number surface_space →
+  UnivariatePolynomial number
+
+public export
+AlgebraicFirstRootFinder : Type → Type
+AlgebraicFirstRootFinder number =
+  algebraic_root_method →
+  UnivariatePolynomial number →
+  RayInterval number →
+  FirstHit number
+
+-- --------------------------------------------------------------------------
+-- Scene and output
+-- --------------------------------------------------------------------------
+
+public export
+record Color3 (color_number : Type) where
+  constructor RGB
+  color_red : color_number
+  color_green : color_number
+  color_blue : color_number
+
+public export
+record Material (color_number : Type) where
+  constructor SurfaceMaterial
+  material_color : Color3 color_number
+  ambient_intensity : color_number
+  diffuse_intensity : color_number
+  specular_intensity : color_number
+  shininess : color_number
+
+public export
+record Light (geometry_number : Type) (color_number : Type) where
+  constructor PointLight
+  light_position : Point3 geometry_number camera_space
+  light_color : Color3 color_number
+  light_intensity : color_number
+
+-- The surface representation is a parameter of the scene.  A level-set field,
+-- a prepared algebraic surface, or a later representation can use the same
+-- camera/material/light side of the tracer.
+public export
+record Scene
+    (surface_description : Type)
+    (geometry_number : Type)
+    (color_number : Type) where
+  constructor SurfaceScene
+  scene_surface : surface_description
+  front_material : Material color_number
+  back_material : Material color_number
+  background : Color3 color_number
+  lights : List (Light geometry_number color_number)
+
+public export
+data TraceResult : Type → Type → Type where
+  Background :
+    {geometry_number : Type} →
+    {color_number : Type} →
+    Color3 color_number →
+    TraceResult geometry_number color_number
+  SurfaceHit :
+    {geometry_number : Type} →
+    {color_number : Type} →
+    RayParameter geometry_number →
+    Point3 geometry_number camera_space →
+    CameraNormal geometry_number →
+    Color3 color_number →
+    TraceResult geometry_number color_number
+
+public export
+Shader : Type → Type → Type → Type
+Shader surface_description geometry_number color_number =
+  Scene surface_description geometry_number color_number →
+  Point3 geometry_number camera_space →
+  ViewDirection geometry_number →
+  CameraNormal geometry_number →
+  Color3 color_number
+
+-- The whole tracer is a composition boundary: give it the intersection
+-- behavior for the chosen surface representation, then a scene and ray bundle.
+public export
+RayTracer : Type → Type → Type → Type
+RayTracer surface_description geometry_number color_number =
+  SurfaceIntersector surface_description geometry_number →
+  SurfaceDifferentialEvaluator surface_description geometry_number →
+  SurfaceNormalTransformer geometry_number →
+  Scene surface_description geometry_number color_number →
+  RayBundle geometry_number →
+  TraceResult geometry_number color_number
