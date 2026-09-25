@@ -71,7 +71,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -no-metrics
           script: |
-            set -Eeuo pipefail
+            set -eu
 
             apk=build/android/pauli-x86_64.apk
             package=org.isomorphisms.pauli
