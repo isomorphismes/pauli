@@ -12,5 +12,10 @@ The common standard is:
 - [Jesper Lützen — *Joseph Liouville 1809–1882*](jesper-lutzen.md)
 - [Gerald B. Folland — *Quantum Field Theory: A Tourist Guide for Mathematicians*](folland.md)
 - [A. Zee — *Quantum Field Theory in a Nutshell*](zee.md)
+- [Hong-Mo Chan and Sheung Tsun Tsou — *Some Elementary Gauge Theory Concepts*](chan-tsou.md)
+
+## Warning
+
+- [Do not use Jackson as the expository model](jackson-warning.md)
 
 These books are not all about the hydrogen atom. They are here because they model useful ways of explaining where mathematical structures come from, what questions they answer, and how computation fits underneath the concepts.
