@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Hydrogen Atom</title>
+<style>
+:root{color-scheme:light dark;font-family:ui-serif,Georgia,Cambria,"Times New Roman",serif;line-height:1.55}
+body{max-width:52rem;margin:0 auto;padding:2rem 1.2rem 5rem}
+h1,h2,h3{line-height:1.15}h1{font-size:clamp(2.3rem,9vw,4.8rem);letter-spacing:-.04em;margin-bottom:.3rem}h2{margin-top:3rem}
+nav{display:flex;flex-wrap:wrap;gap:1rem;margin:1rem 0 3rem}
+a{color:inherit;text-decoration-thickness:.08em;text-underline-offset:.14em}
+.lede{font-size:1.25rem;max-width:44rem}.question{font-size:1.2rem;border-left:.22rem solid currentColor;padding-left:1rem;margin:1.5rem 0}
+.equation{font-family:ui-monospace,"SFMono-Regular",Consolas,monospace;overflow-x:auto;padding:.7rem 0;white-space:nowrap}
+table{border-collapse:collapse;width:100%;margin:1.2rem 0 2rem}th,td{border-bottom:1px solid currentColor;text-align:left;vertical-align:top;padding:.55rem .45rem}
+figure{margin:2rem auto;max-width:34rem}figure img{display:block;width:100%;height:auto}figcaption,.small{font-size:.9rem;opacity:.78}
+details{margin:1.5rem 0}footer{border-top:1px solid currentColor;margin-top:4rem;padding-top:2rem}
+code{font-family:ui-monospace,"SFMono-Regular",Consolas,monospace}
+</style>
+</head>
+<body>
+<header>
+<h1>The Hydrogen Atom</h1>
+<p class="lede">A point nucleus, three-dimensional space, rotations, and a linear state space already force much of the structure that chemistry books often present as a list of formulas and labels.</p>
+<nav>
+<a href="books.html">Books and sources</a>
+<a href="hydrogen.ipynb">Executable Sage notebook</a>
+</nav>
+</header>
+
+<main>
+<section>
+<h2>Start with a local question</h2>
+<p>Write one number at every point: temperature, membrane displacement, electric potential, or something else. At one point ask whether its value is above, below, or in balance with the values immediately around it.</p>
+<p class="question">That local comparison is what the operation later named the <strong>Laplacian</strong> measures.</p>
+<p>On a line this is a second difference: how the first difference is itself changing. In ordinary three-dimensional coordinates, the same question is asked independently in three directions and the answers are added.</p>
+<div class="equation">Δf = second change in x + second change in y + second change in z</div>
+
+<figure>
+<img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/VibratingDrumhead4.gif" alt="Animated normal mode of a vibrating circular drumhead">
+<figcaption>A natural vibration pattern of a circular drumhead. CC0 animation by LunarEclipse2014, Wikimedia Commons.</figcaption>
+</figure>
+
+<p>A membrane is pulled by its neighbors. Its acceleration therefore depends on how it bends relative to those neighbors. The shapes that reproduce themselves while vibrating are its natural patterns.</p>
+</section>
+
+<section>
+<h2>Now put the same question on a sphere</h2>
+<p>A point nucleus has no preferred direction. Points at the same distance from it form a sphere. Before choosing an axis or introducing the usual integer labels, ask which angular patterns are preserved as families by rotations.</p>
+<p>There is a concrete way to make those patterns. Start with ordinary homogeneous polynomials in <code>x</code>, <code>y</code>, and <code>z</code>. Keep only the ones whose local-balance measure is zero. Then restrict those polynomials to the unit sphere.</p>
+<p class="question">The Sage calculation literally takes the kernel of that operation. For degrees zero through three it finds the dimensions below.</p>
+
+<table>
+<thead><tr><th>polynomial degree</th><th>independent angular patterns</th><th>later chemistry label</th></tr></thead>
+<tbody>
+<!-- generated:angular:start -->
+<tr>
+<td>0</td>
+<td>1</td>
+<td>s</td>
+</tr>
+<tr>
+<td>1</td>
+<td>3</td>
+<td>p</td>
+</tr>
+<tr>
+<td>2</td>
+<td>5</td>
+<td>d</td>
+</tr>
+<tr>
+<td>3</td>
+<td>7</td>
+<td>f</td>
+</tr>
+<!-- generated:angular:end -->
+</tbody>
+</table>
+
+<p>So the familiar sequence <strong>1, 3, 5, 7</strong> is not a table we have to start by memorizing. It falls out of a small geometric question.</p>
+<details>
+<summary>Where “spherical harmonic” enters</summary>
+<p>A function whose local-balance measure is zero is traditionally called <em>harmonic</em>. Restricting these homogeneous harmonic polynomials to a sphere produces the objects traditionally called spherical harmonics. The name comes after the construction.</p>
+</details>
+</section>
+
+<section>
+<h2>Distance from the nucleus is a different question</h2>
+<p>Once an angular family is fixed, the remaining unknown depends only on distance from the nucleus. For a bound state, the equation itself tells us what behavior is allowed near the nucleus and far away.</p>
+<p>Factor out the power forced near the origin and the exponential decay forced far away. What remains can be written as a power series. The calculator then asks what relation neighboring coefficients must satisfy.</p>
+<div class="equation">next coefficient = 2[(inverse length)(current power + angular degree + 1) − 1] ÷ [(next power)(current power + 2 angular degree + 2)] × current coefficient</div>
+<p>For a bound state the series has to stop. The stopping condition fixes the allowed inverse length and therefore the allowed energy. What remains is a finite polynomial.</p>
+
+<table>
+<thead><tr><th>bound-energy family</th><th>angular degree</th><th>finite radial polynomial</th></tr></thead>
+<tbody>
+<!-- generated:radial:start -->
+<tr><td>1</td><td>0</td><td><code>1</code></td></tr>
+<tr><td>2</td><td>0</td><td><code>1 − r/2</code></td></tr>
+<tr><td>2</td><td>1</td><td><code>1</code></td></tr>
+<tr><td>3</td><td>0</td><td><code>1 − 2r/3 + 2r²/27</code></td></tr>
+<tr><td>3</td><td>1</td><td><code>1 − r/6</code></td></tr>
+<tr><td>3</td><td>2</td><td><code>1</code></td></tr>
+<tr><td>4</td><td>0</td><td><code>1 − 3r/4 + r²/8 − r³/192</code></td></tr>
+<tr><td>4</td><td>1</td><td><code>1 − r/4 + r²/80</code></td></tr>
+<tr><td>4</td><td>2</td><td><code>1 − r/12</code></td></tr>
+<tr><td>4</td><td>3</td><td><code>1</code></td></tr>
+<!-- generated:radial:end -->
+</tbody>
+</table>
+
+<p class="small">Here <code>r</code> is distance measured in hydrogen's natural length unit, so the physical constants have been scaled out. Overall normalization is applied after the shape has been found.</p>
+<details>
+<summary>Where “Laguerre” enters</summary>
+<p>After deriving these finite polynomials from the recurrence, the build asks Sage for the named generalized-Laguerre family and checks that the two differ only by an overall constant. The library function is an oracle, not the constructor.</p>
+</details>
+</section>
+
+<section>
+<h2>Why thirty states appear before rendering</h2>
+<p>The first four bound-energy families contain
+<!-- generated:counts:start -->
+<strong>1 + 4 + 9 + 16 = 30</strong>
+<!-- generated:counts:end -->
+independent spatial states. Those counts come from adding the angular-family dimensions, not from a hard-coded orbital table.</p>
+<p>The repository then checks the exact stationary equation, normalization and orthogonality, and lowers the resulting complex values to the runtime as <strong>magnitude + phase</strong>, never a rectangular real/imaginary pair.</p>
+</section>
+</main>
+
+<footer>
+<h2>More curious than this page?</h2>
+<p><a href="hydrogen.ipynb"><strong>Open the executable Sage notebook.</strong></a> Rerun the calculations, change a degree, change the recurrence, inspect the kernels, and see what breaks.</p>
+<p><a href="books.html">See the books and sources behind the explanation.</a></p>
+</footer>
+</body>
+</html>
