@@ -23,11 +23,14 @@ runtime_library=${IDRIC_RUNTIME_LIBRARY:-"$(dirname -- "$idric")/idris2_app/libi
 
 mkdir -p "$repo_root/build/android"
 
-IDRIS2_PATH="$backend/build/ttc:${IDRIS2_PATH:-}" \
-    "$idric" \
-    --source-dir "$repo_root/android" \
-    "$repo_root/android/PauliActivityShellGen.idr" \
-    -o pauli-activity-shell-gen
+(
+    cd "$repo_root"
+    IDRIS2_PATH="$backend/build/ttc:${IDRIS2_PATH:-}" \
+        "$idric" \
+        --source-dir "$repo_root/android" \
+        "$repo_root/android/PauliActivityShellGen.idr" \
+        -o pauli-activity-shell-gen
+)
 
 generator="$repo_root/build/exec/pauli-activity-shell-gen"
 cp "$runtime_library" "${generator}_app/"
