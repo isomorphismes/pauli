@@ -1,0 +1,41 @@
+name: Idriç ray tracer type sketch
+
+on:
+  pull_request:
+    paths:
+      - "raytracer/**"
+      - ".github/workflows/idric-raytracer-types.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "raytracer/**"
+      - ".github/workflows/idric-raytracer-types.yml"
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out exact Pauli source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Check out pinned Idriç compiler
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          repository: dilapidated-shed/Idric
+          ref: 51e3892d4de59943e42e65c60a9814aba792c5d4
+          path: .idric-toolchain
+          persist-credentials: false
+
+      - name: Bootstrap pinned Idriç
+        run: ./.idric-toolchain/edric bootstrap
+
+      - name: Typecheck ray tracer types
+        run: |
+          ./.idric-toolchain/edric --emit-one-step \
+            "$GITHUB_WORKSPACE/raytracer/RayTracerTypes.idric" \
+            -o "$RUNNER_TEMP/raytracer-types.anf"
