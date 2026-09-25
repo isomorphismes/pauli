@@ -692,27 +692,38 @@ tone_map_color (RGB red green blue) =
     (tone_map_channel green)
     (tone_map_channel blue)
 
+trace_atom_interval :
+  Ray Double surface_space →
+  RayInterval Double →
+  Color3 Double
+trace_atom_interval
+  surface_ray
+  (Between lower upper) =
+    let panel_count : Number
+        panel_count = 24
+        half_step =
+          (upper - lower) /
+          (2.0 * cast panel_count)
+        integrated =
+          simpson_orbital_integral
+            panel_count
+            surface_ray
+            lower
+            half_step
+    in clamp_color
+         (add_colors
+           background
+           (tone_map_color integrated))
+
 trace_atom_bundle : RayBundle Double → Color3 Double
 trace_atom_bundle
   rays@(SameParameterRays _ _ surface_ray _) =
     case visible_interval_for_bundle rays of
       OutsideClip ⇒ background
-      VisibleInterval (Between lower upper) ⇒
-        let panel_count : Number
-            panel_count = 24
-            half_step =
-              (upper - lower) /
-              (2.0 * cast panel_count)
-            integrated =
-              simpson_orbital_integral
-                panel_count
-                surface_ray
-                lower
-                half_step
-        in clamp_color
-             (add_colors
-               background
-               (tone_map_color integrated))
+      VisibleInterval interval ⇒
+        trace_atom_interval
+          surface_ray
+          interval
 
 trace_atom_sample : ViewSample Double → Color3 Double
 trace_atom_sample sample =
