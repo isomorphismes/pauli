@@ -19,6 +19,43 @@ Android NDK NativeActivity reference:
 
 https://developer.android.com/ndk/reference/group/native-activity
 
+## Product boundary: viewer on the phone, explanation on the web
+
+The Android application is **not** the course, notebook, derivation, or reference manual.
+
+Its job is deliberately narrow:
+
+- render the selected orbital;
+- accept touch input;
+- rotate the view/state smoothly;
+- allow a very small amount of state selection;
+- provide one unobtrusive **Why is this happening?** link.
+
+That link should hand the user to an ordinary external web page in the system browser. Do not embed a WebView and do not make the explanatory site part of the renderer process.
+
+The explanatory page can be long, interactive, and computationally rich: static HTML, a Sage-backed page, notebooks rendered for the web, or whatever later proves useful. None of it is a startup or runtime dependency of the Android viewer.
+
+The viewer must remain fully useful offline except for following that optional explanation link.
+
+This separation is intentional:
+
+```text
+Android
+    see it
+    touch it
+    rotate it
+    choose another state
+          |
+          | optional: "Why is this happening?"
+          v
+browser / explanatory site
+    derivation
+    symmetry
+    history
+    calculations
+    longer interactive material
+```
+
 ## Runtime boundary
 
 The preferred installed shape is:
