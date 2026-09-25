@@ -70,15 +70,25 @@ def sympy_state(
         for symbol in expression.free_symbols
     }
 
+    replacements = {}
+
+    if "radius" in by_name:
+        replacements[
+            by_name["radius"]
+        ] = real_radius
+
+    if "polar_angle" in by_name:
+        replacements[
+            by_name["polar_angle"]
+        ] = real_polar_angle
+
+    if "azimuth" in by_name:
+        replacements[
+            by_name["azimuth"]
+        ] = real_azimuth
+
     expression = expression.subs(
-        {
-            by_name["radius"]:
-                real_radius,
-            by_name["polar_angle"]:
-                real_polar_angle,
-            by_name["azimuth"]:
-                real_azimuth,
-        }
+        replacements
     )
 
     return sp.simplify(expression)
