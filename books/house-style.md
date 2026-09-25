@@ -155,6 +155,35 @@ A representation is not one chosen set of matrices.
 
 Coordinates, matrices, plots, and conventional vector-calculus aliases are useful representations. Do not let them replace the object in the prose or architecture.
 
+## Do not make quantum numbers the presentation
+
+The symbols `n`, `l`, `m`, and the phrase **quantum numbers** are bookkeeping conventions, not explanations.
+
+Public-facing prose and controls should name the physical or geometric thing first.
+
+Prefer:
+
+- **energy family** or **energy level** instead of leading with `n`;
+- **angular family** or **shape family** instead of leading with `l`;
+- **component along the chosen axis** instead of leading with `m`;
+- **spin outcome along this axis** instead of leading with `m_s`.
+
+The conventional symbols may appear afterward in parentheses, in equations, in file formats, or in an advanced-details view where interoperability matters.
+
+Bad:
+
+> Choose quantum numbers n = 3, l = 2, m = -1.
+
+Better:
+
+> Choose the third bound-energy family, the five-pattern angular family, and the component one step opposite the chosen axis.
+
+Then, if useful:
+
+> Conventional notation: n = 3, l = 2, m = -1.
+
+Do not force a reader to memorize opaque integer labels before the object they label has been explained.
+
 ## Specific failure modes to avoid
 
 ### Definition-first writing
