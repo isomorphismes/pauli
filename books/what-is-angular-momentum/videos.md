@@ -71,6 +71,44 @@ The title asks exactly the vocabulary question that otherwise causes trouble in 
 
 Keep it as a secondary explainer. The repository's own prose should still say explicitly that "up" and "down" are relative to the chosen measurement axis.
 
+## Demonstration of Spin 1/2 for an Electron Wavefunction
+
+YouTube:
+https://youtu.be/gTdIvG1FVxc
+
+Author: lloydwatts60.
+
+### Why keep it
+
+This is one of the user's explicit visual references.
+
+It shows a complex wave wrapped around a loop and compares:
+
+- an integer number of phase cycles;
+- a spin +1/2 construction with a half-integer number of cycles;
+- a spin -1/2 construction with the opposite half-cycle sense;
+- the fact that the depicted spin-1/2 construction needs two trips around the loop before returning to the same displayed state.
+
+Keep it as a **visual model of the sign change / double-valued behavior**, not as the derivation or definition of electron spin.
+
+## Dirac's Belt Trick for a Spin 1/2 Particle
+
+YouTube:
+https://youtu.be/ICEIgznuHmg
+
+Uploader: Jake Remmert; the description credits Antonio Martos de la Torre for the original Vimeo upload.
+
+### Why keep it
+
+This is another user-supplied visual reference.
+
+The belt trick makes the 360° / 720° distinction tangible:
+
+- a single 360° rotation leaves a twist that cannot be removed while the ends remain constrained;
+- after 720°, the twist can be continuously untangled.
+
+Use it as a picture of the topology behind spin-1/2 rotation behavior, not as a picture of a little electron physically spinning.
+
 # Spinors: 360 degrees and 720 degrees
 
 These videos are visually important, but they are **not** introductory explanations of angular momentum.
