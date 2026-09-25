@@ -101,11 +101,11 @@ def angular_html():
 
 def radial_html():
     return "\n".join(
-        f"""<tr>
-<td>{energy_family}</td>
-<td>{angular_degree}</td>
-<td><code>{escape(polynomial_text(coefficients))}</code></td>
-</tr>"""
+        (
+            f"<tr><td>{energy_family}</td>"
+            f"<td>{angular_degree}</td>"
+            f"<td><code>{escape(polynomial_text(coefficients))}</code></td></tr>"
+        )
         for (
             energy_family,
             angular_degree,
@@ -167,14 +167,14 @@ def book_items_html():
 
         note_html = (
             f"<br><span class=\"small\">"
-            f"{escape(note)}</span>"
+            f"{escape(note, quote=False)}</span>"
             if note
             else ""
         )
 
         items.append(
             "<li>"
-            f"<strong>{escape(title)}</strong>"
+            f"<strong>{escape(title, quote=False)}</strong>"
             f"{note_html}"
             "</li>"
         )
