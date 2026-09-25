@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - "symbolic/**"
+      - "runtime/**"
       - ".github/workflows/symbolic-checks.yml"
   push:
     branches:
       - main
     paths:
       - "symbolic/**"
+      - "runtime/**"
       - ".github/workflows/symbolic-checks.yml"
 
 jobs:
@@ -35,7 +37,7 @@ jobs:
             sagemath/sagemath:10.8 \
             sage -python symbolic/check_with_sympy.py
 
-      - name: Generate Complex F64 evaluator
+      - name: Generate polar Complex F64 evaluator
         run: |
           mkdir -p "$RUNNER_TEMP/pauli-generated"
 
@@ -43,17 +45,27 @@ jobs:
             -v "$PWD:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python symbolic/export_f64.py \
+            sage -python symbolic/export_polar_f64.py \
             > "$RUNNER_TEMP/pauli-generated/hydrogen_spdf_f64.h"
 
           docker run --rm \
             -v "$PWD:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python symbolic/export_f64_receipts.py \
-            > "$RUNNER_TEMP/pauli-generated/f64_receipts.tsv"
+            sage -python symbolic/export_polar_f64_receipts.py \
+            > "$RUNNER_TEMP/pauli-generated/polar_f64_receipts.tsv"
 
-      - name: Check Complex F64 evaluator
+      - name: Reject Cartesian complex runtime machinery
+        run: |
+          if grep -Eq \
+            '(hypot|atan2|\.real|\.imaginary)' \
+            "$RUNNER_TEMP/pauli-generated/hydrogen_spdf_f64.h"
+          then
+            echo "generated runtime evaluator contains Cartesian complex machinery" >&2
+            exit 1
+          fi
+
+      - name: Check polar Complex F64 evaluator
         run: |
           cc \
             -std=c99 \
@@ -62,9 +74,9 @@ jobs:
             -Wextra \
             -pedantic \
             -I "$RUNNER_TEMP/pauli-generated" \
-            symbolic/check_f64_runtime.c \
+            symbolic/check_polar_f64_runtime.c \
             -lm \
-            -o "$RUNNER_TEMP/pauli-generated/check_f64_runtime"
+            -o "$RUNNER_TEMP/pauli-generated/check_polar_f64_runtime"
 
-          "$RUNNER_TEMP/pauli-generated/check_f64_runtime" \
-            "$RUNNER_TEMP/pauli-generated/f64_receipts.tsv"
+          "$RUNNER_TEMP/pauli-generated/check_polar_f64_runtime" \
+            "$RUNNER_TEMP/pauli-generated/polar_f64_receipts.tsv"
