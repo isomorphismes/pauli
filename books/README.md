@@ -1,6 +1,6 @@
 # Books
 
-References for the mathematical and expository style of `laguerre`.
+References for the mathematical and expository style of `pauli`.
 
 The common standard is:
 
@@ -13,6 +13,12 @@ The common standard is:
 - [Gerald B. Folland — *Quantum Field Theory: A Tourist Guide for Mathematicians*](folland.md)
 - [A. Zee — *Quantum Field Theory in a Nutshell*](zee.md)
 - [Hong-Mo Chan and Sheung Tsun Tsou — *Some Elementary Gauge Theory Concepts*](chan-tsou.md)
+
+## Not personally read
+
+- [Books I have not personally read](books%20I%20have%20not%20personally%20read/README.md)
+
+These are machine-suggested references kept separately from books the repository owner has personally read.
 
 ## Warning
 
