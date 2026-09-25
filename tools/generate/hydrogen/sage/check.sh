@@ -58,18 +58,8 @@ run_sage_python() {
 
 run_sage_python "$sage_directory/check_hydrogen_states.py"
 run_sage_python "$sage_directory/check_with_sympy.py"
-run_sage_python "$sage_directory/update_public.py"
+run_sage_python "$sage_directory/update_public.py" --check
 run_sage_python "$sage_directory/check_notebook.py"
-
-if ! git diff --exit-code -- hydrogen.html books.html
-then
-    printf \
-        '%bFAIL%b: public hydrogen HTML is stale. Regenerate it with Sage.\n' \
-        "$red" \
-        "$reset" \
-        >&2
-    exit 1
-fi
 
 run_sage_python "$sage_directory/export_polar_f64.py" \
     > "$temporary_directory/hydrogen_spdf_f64.h"
