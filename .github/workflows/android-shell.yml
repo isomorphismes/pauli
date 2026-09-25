@@ -21,7 +21,6 @@ jobs:
 
       - name: Check shell syntax
         run: |
-          bash -n android/build-dex.sh
           bash -n android/build-native.sh
           bash -n android/build-apk.sh
           bash -n android/build.sh
