@@ -61,16 +61,28 @@ run_sage_python \
     symbolic/check_with_sympy.py
 
 run_sage_python \
-    symbolic/export_f64.py \
+    symbolic/export_polar_f64.py \
     > "$temporary_directory/hydrogen_spdf_f64.h"
 
 run_sage_python \
-    symbolic/export_f64_receipts.py \
-    > "$temporary_directory/f64_receipts.tsv"
+    symbolic/export_polar_f64_receipts.py \
+    > "$temporary_directory/polar_f64_receipts.tsv"
+
+if grep -Eq \
+    '(hypot|atan2|\.real|\.imaginary)' \
+    "$temporary_directory/hydrogen_spdf_f64.h"
+then
+    printf \
+        '%bFAIL%b: generated runtime evaluator contains Cartesian complex machinery.\n' \
+        "$red" \
+        "$reset" \
+        >&2
+    exit 1
+fi
 
 if ! command -v cc >/dev/null 2>&1; then
     printf \
-        '%bFAIL%b: a C99 compiler is required for the F64 receipt check.\n' \
+        '%bFAIL%b: a C99 compiler is required for the polar F64 receipt check.\n' \
         "$red" \
         "$reset" \
         >&2
@@ -84,14 +96,14 @@ cc \
     -Wextra \
     -pedantic \
     -I "$temporary_directory" \
-    symbolic/check_f64_runtime.c \
+    symbolic/check_polar_f64_runtime.c \
     -lm \
-    -o "$temporary_directory/check_f64_runtime"
+    -o "$temporary_directory/check_polar_f64_runtime"
 
-"$temporary_directory/check_f64_runtime" \
-    "$temporary_directory/f64_receipts.tsv"
+"$temporary_directory/check_polar_f64_runtime" \
+    "$temporary_directory/polar_f64_receipts.tsv"
 
 printf \
-    '%bPASS%b: symbolic and Complex F64 checks complete.\n' \
+    '%bPASS%b: symbolic and polar Complex F64 checks complete.\n' \
     "$green" \
     "$reset"
