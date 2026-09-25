@@ -40,7 +40,7 @@ jobs:
             "$GITHUB_WORKSPACE/raytracer/RayTracer.idric" \
             -o "$RUNNER_TEMP/raytracer.anf"
 
-      - name: Compile runnable Idriç ray tracer
+      - name: Run Idriç ray tracer
         run: |
           support_root="$GITHUB_WORKSPACE/.idric-toolchain/_"
           compiler="$support_root/build/exec/idris2"
@@ -49,14 +49,11 @@ jobs:
           PATH="$support_root/.tools/bin:$PATH" \
           IDRIS2_PREFIX="$support_root/bootstrap-build" \
           IDRIS2_PATH="$library_path" \
-            "$compiler" --cg chez \
-              --output-dir "$RUNNER_TEMP" \
-              -o pauli-raytracer \
-              RayTracer.idric
+            "$compiler" --exec main RayTracer.idric \
+              > "$RUNNER_TEMP/pauli-raytracer.ppm"
 
-      - name: Render and inspect PPM frame
+      - name: Inspect rendered PPM frame
         run: |
-          "$RUNNER_TEMP/pauli-raytracer" > "$RUNNER_TEMP/pauli-raytracer.ppm"
           test "$(sed -n '1p' "$RUNNER_TEMP/pauli-raytracer.ppm")" = "P3"
           test "$(sed -n '2p' "$RUNNER_TEMP/pauli-raytracer.ppm")" = "64 48"
           test "$(sed -n '3p' "$RUNNER_TEMP/pauli-raytracer.ppm")" = "255"
