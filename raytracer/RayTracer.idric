@@ -1,0 +1,644 @@
+module RayTracer
+
+import RayTracerTypes
+
+%default total
+%unbound_implicits off
+
+-- A complete first executable ray tracer in today's Idriç.
+--
+-- The numerical implementation is Double for this experiment because Double is
+-- the floating primitive currently exposed by the inherited Idris 2 runtime.
+-- The public type sketch remains representation-parametric.
+
+-- --------------------------------------------------------------------------
+-- Geometry
+-- --------------------------------------------------------------------------
+
+square : Double → Double
+square value = value * value
+
+add_directions :
+  {space : coordinate_space} →
+  Direction3 Double space →
+  Direction3 Double space →
+  Direction3 Double space
+add_directions
+  (Direction left_x left_y left_z)
+  (Direction right_x right_y right_z) =
+    Direction
+      (left_x + right_x)
+      (left_y + right_y)
+      (left_z + right_z)
+
+scale_direction :
+  {space : coordinate_space} →
+  Double →
+  Direction3 Double space →
+  Direction3 Double space
+scale_direction scale (Direction x y z) =
+  Direction (scale * x) (scale * y) (scale * z)
+
+negate_direction :
+  {space : coordinate_space} →
+  Direction3 Double space →
+  Direction3 Double space
+negate_direction = scale_direction (-1.0)
+
+dot_directions :
+  {space : coordinate_space} →
+  Direction3 Double space →
+  Direction3 Double space →
+  Double
+dot_directions
+  (Direction left_x left_y left_z)
+  (Direction right_x right_y right_z) =
+    left_x * right_x +
+    left_y * right_y +
+    left_z * right_z
+
+direction_length :
+  {space : coordinate_space} →
+  Direction3 Double space →
+  Double
+direction_length direction =
+  sqrt (dot_directions direction direction)
+
+normalize_direction :
+  {space : coordinate_space} →
+  Direction3 Double space →
+  Direction3 Double space
+normalize_direction direction =
+  let length = direction_length direction
+  in if length ≟ 0.0
+       then direction
+       else scale_direction (1.0 / length) direction
+
+move_point :
+  {space : coordinate_space} →
+  Point3 Double space →
+  Direction3 Double space →
+  Point3 Double space
+move_point
+  (Point x y z)
+  (Direction dx dy dz) =
+    Point (x + dx) (y + dy) (z + dz)
+
+direction_between_points :
+  {space : coordinate_space} →
+  Point3 Double space →
+  Point3 Double space →
+  Direction3 Double space
+direction_between_points
+  (Point from_x from_y from_z)
+  (Point to_x to_y to_z) =
+    Direction
+      (to_x - from_x)
+      (to_y - from_y)
+      (to_z - from_z)
+
+point_on_ray :
+  {space : coordinate_space} →
+  Ray Double space →
+  RayParameter Double →
+  Point3 Double space
+point_on_ray (RayFrom origin direction) parameter =
+  move_point origin (scale_direction parameter direction)
+
+-- The first runnable frame uses the same orientation in camera and surface
+-- space.  The conversion remains explicit so a rotated camera cannot silently
+-- turn a surface covector into a camera direction.
+surface_covector_to_camera_normal : SurfaceNormalTransformer Double
+surface_covector_to_camera_normal (Covector x y z) =
+  normalize_direction (Direction x y z)
+
+-- --------------------------------------------------------------------------
+-- Stussak-style ray bundle and clipping
+-- --------------------------------------------------------------------------
+
+orthographic_ray_creator : RayCreator Double
+orthographic_ray_creator (SampleAt u v) =
+  SameParameterRays
+    (RayFrom
+      (Point u v 2.5)
+      (Direction 0.0 0.0 (-1.0)))
+    (RayFrom
+      (Point u v 2.5)
+      (Direction 0.0 0.0 (-1.0)))
+    (RayFrom
+      (Point u v 2.5)
+      (Direction 0.0 0.0 (-1.0)))
+    (EyeAt 0.0)
+
+clip_to_unit_sphere : RayClipper Double
+clip_to_unit_sphere
+  (RayFrom
+    (Point origin_x origin_y origin_z)
+    (Direction direction_x direction_y direction_z)) =
+  let a =
+        square direction_x +
+        square direction_y +
+        square direction_z
+      b =
+        2.0 *
+        (origin_x * direction_x +
+         origin_y * direction_y +
+         origin_z * direction_z)
+      c =
+        square origin_x +
+        square origin_y +
+        square origin_z -
+        1.0
+      discriminant = square b - 4.0 * a * c
+  in if a ≟ 0.0
+       then OutsideClip
+       else if discriminant < 0.0
+         then OutsideClip
+         else
+           let discriminant_root = sqrt discriminant
+               first = ((-b) - discriminant_root) / (2.0 * a)
+               second = ((-b) + discriminant_root) / (2.0 * a)
+               lower = if first ≤ second then first else second
+               upper = if first ≤ second then second else first
+           in VisibleInterval (Between lower upper)
+
+visible_interval_for_bundle : RayBundle Double → ClipResult Double
+visible_interval_for_bundle
+  (SameParameterRays _ clipping_ray _ (EyeAt eye_parameter)) =
+    case clip_to_unit_sphere clipping_ray of
+      OutsideClip ⇒ OutsideClip
+      VisibleInterval (Between lower upper) ⇒
+        if lower < eye_parameter && eye_parameter < upper
+          then VisibleInterval (Between eye_parameter upper)
+          else VisibleInterval (Between lower upper)
+
+-- --------------------------------------------------------------------------
+-- Generic level-set intersection
+-- --------------------------------------------------------------------------
+
+value_relative_to_level :
+  LevelSetSurface Double →
+  Point3 Double surface_space →
+  Double
+value_relative_to_level (LevelSet level field _) point =
+  field point - level
+
+level_set_differential :
+  SurfaceDifferentialEvaluator (LevelSetSurface Double) Double
+level_set_differential (LevelSet _ _ differential) point =
+  differential point
+
+bisect_level_set :
+  Number →
+  LevelSetSurface Double →
+  Ray Double surface_space →
+  Double →
+  Double →
+  Double →
+  Double
+bisect_level_set Z _ _ lower upper _ =
+  0.5 * (lower + upper)
+bisect_level_set
+  (S remaining)
+  surface
+  ray
+  lower
+  upper
+  lower_value =
+    let middle = 0.5 * (lower + upper)
+        middle_value =
+          value_relative_to_level surface (point_on_ray ray middle)
+    in if middle_value ≟ 0.0
+         then middle
+         else if lower_value * middle_value < 0.0
+           then bisect_level_set
+             remaining surface ray lower middle lower_value
+           else bisect_level_set
+             remaining surface ray middle upper middle_value
+
+search_level_set_segments :
+  Number →
+  LevelSetSurface Double →
+  Ray Double surface_space →
+  Double →
+  Double →
+  Double →
+  FirstHit Double
+search_level_set_segments Z _ _ _ _ _ = NoHit
+search_level_set_segments
+  (S remaining)
+  surface
+  ray
+  current_parameter
+  current_value
+  step =
+    let next_parameter = current_parameter + step
+        next_value =
+          value_relative_to_level surface (point_on_ray ray next_parameter)
+    in if current_value ≟ 0.0
+         then HitAt current_parameter
+         else if next_value ≟ 0.0
+           then HitAt next_parameter
+           else if current_value * next_value < 0.0
+             then HitAt
+               (bisect_level_set
+                 28
+                 surface
+                 ray
+                 current_parameter
+                 next_parameter
+                 current_value)
+             else search_level_set_segments
+               remaining
+               surface
+               ray
+               next_parameter
+               next_value
+               step
+
+first_level_set_hit :
+  SurfaceIntersector (LevelSetSurface Double) Double
+first_level_set_hit surface ray (Between lower upper) =
+  if upper < lower
+    then NoHit
+    else if upper ≟ lower
+      then
+        if value_relative_to_level surface (point_on_ray ray lower) ≟ 0.0
+          then HitAt lower
+          else NoHit
+      else
+        let sample_count : Number
+            sample_count = 128
+            step = (upper - lower) / cast sample_count
+            lower_value =
+              value_relative_to_level surface (point_on_ray ray lower)
+        in search_level_set_segments
+          sample_count
+          surface
+          ray
+          lower
+          lower_value
+          step
+
+-- --------------------------------------------------------------------------
+-- Color, materials, and lighting
+-- --------------------------------------------------------------------------
+
+add_colors : Color3 Double → Color3 Double → Color3 Double
+add_colors
+  (RGB left_red left_green left_blue)
+  (RGB right_red right_green right_blue) =
+    RGB
+      (left_red + right_red)
+      (left_green + right_green)
+      (left_blue + right_blue)
+
+scale_color : Double → Color3 Double → Color3 Double
+scale_color scale (RGB red green blue) =
+  RGB (scale * red) (scale * green) (scale * blue)
+
+multiply_colors : Color3 Double → Color3 Double → Color3 Double
+multiply_colors
+  (RGB left_red left_green left_blue)
+  (RGB right_red right_green right_blue) =
+    RGB
+      (left_red * right_red)
+      (left_green * right_green)
+      (left_blue * right_blue)
+
+clamp_channel : Double → Double
+clamp_channel value =
+  if value < 0.0
+    then 0.0
+    else if value > 1.0
+      then 1.0
+      else value
+
+clamp_color : Color3 Double → Color3 Double
+clamp_color (RGB red green blue) =
+  RGB
+    (clamp_channel red)
+    (clamp_channel green)
+    (clamp_channel blue)
+
+data VisibleMaterial
+  = FrontFacing (CameraNormal Double) (Material Double)
+  | BackFacing (CameraNormal Double) (Material Double)
+
+material_for_visible_side :
+  CameraNormal Double →
+  ViewDirection Double →
+  Material Double →
+  Material Double →
+  VisibleMaterial
+material_for_visible_side normal view front_material back_material =
+  if dot_directions normal view > 0.0
+    then FrontFacing normal front_material
+    else BackFacing (negate_direction normal) back_material
+
+add_light :
+  Point3 Double camera_space →
+  ViewDirection Double →
+  CameraNormal Double →
+  Material Double →
+  Color3 Double →
+  Light Double Double →
+  Color3 Double
+add_light
+  hit_point
+  view
+  normal
+  (SurfaceMaterial
+    material_color
+    ambient_intensity
+    diffuse_intensity
+    specular_intensity
+    shininess)
+  color
+  (PointLight light_position light_color light_intensity) =
+    let light_direction =
+          normalize_direction
+            (direction_between_points hit_point light_position)
+        lambert = dot_directions normal light_direction
+    in if lambert ≤ 0.0
+         then color
+         else
+           let diffuse =
+                 scale_color
+                   (lambert * diffuse_intensity * light_intensity)
+                   (multiply_colors material_color light_color)
+               half_direction =
+                 normalize_direction
+                   (add_directions light_direction view)
+               normal_half =
+                 let value = dot_directions normal half_direction
+                 in if value < 0.0 then 0.0 else value
+               specular_amount =
+                 pow normal_half shininess
+               specular =
+                 scale_color
+                   (specular_amount * specular_intensity * light_intensity)
+                   light_color
+           in add_colors color (add_colors diffuse specular)
+
+shade_hit :
+  Point3 Double camera_space →
+  ViewDirection Double →
+  CameraNormal Double →
+  Material Double →
+  List (Light Double Double) →
+  Color3 Double
+shade_hit
+  hit_point
+  view
+  normal
+  material@(SurfaceMaterial material_color ambient _ _ _)
+  lights =
+    let ambient_color = scale_color ambient material_color
+    in clamp_color (add_all_lights lights ambient_color)
+  where
+    add_all_lights :
+      List (Light Double Double) →
+      Color3 Double →
+      Color3 Double
+    add_all_lights [] color = color
+    add_all_lights (light :: remaining) color =
+      add_all_lights
+        remaining
+        (add_light hit_point view normal material color light)
+
+-- --------------------------------------------------------------------------
+-- Whole tracing pipeline
+-- --------------------------------------------------------------------------
+
+trace_ray :
+  {surface_description : Type} →
+  SurfaceIntersector surface_description Double →
+  SurfaceDifferentialEvaluator surface_description Double →
+  SurfaceNormalTransformer Double →
+  Scene surface_description Double Double →
+  RayBundle Double →
+  TraceResult Double Double
+trace_ray
+  intersect_surface
+  evaluate_differential
+  transform_normal
+  (SurfaceScene
+    surface
+    front_material
+    back_material
+    background
+    lights)
+  rays@(SameParameterRays
+    camera_ray
+    _
+    surface_ray
+    (EyeAt eye_parameter)) =
+      case visible_interval_for_bundle rays of
+        OutsideClip ⇒ Background background
+        VisibleInterval interval ⇒
+          case intersect_surface surface surface_ray interval of
+            NoHit ⇒ Background background
+            HitAt hit_parameter ⇒
+              let surface_point =
+                    point_on_ray surface_ray hit_parameter
+                  differential =
+                    evaluate_differential surface surface_point
+                  camera_normal =
+                    transform_normal differential
+                  camera_point =
+                    point_on_ray camera_ray hit_parameter
+                  eye_point =
+                    point_on_ray camera_ray eye_parameter
+                  view =
+                    normalize_direction
+                      (direction_between_points camera_point eye_point)
+              in case material_for_visible_side
+                        camera_normal
+                        view
+                        front_material
+                        back_material of
+                   FrontFacing visible_normal material ⇒
+                     SurfaceHit
+                       hit_parameter
+                       camera_point
+                       visible_normal
+                       (shade_hit
+                         camera_point
+                         view
+                         visible_normal
+                         material
+                         lights)
+                   BackFacing visible_normal material ⇒
+                     SurfaceHit
+                       hit_parameter
+                       camera_point
+                       visible_normal
+                       (shade_hit
+                         camera_point
+                         view
+                         visible_normal
+                         material
+                         lights)
+
+level_set_ray_tracer :
+  RayTracer (LevelSetSurface Double) Double Double
+level_set_ray_tracer =
+  trace_ray
+
+-- --------------------------------------------------------------------------
+-- First executable scene
+-- --------------------------------------------------------------------------
+
+sphere_field : SurfaceValue Double
+sphere_field (Point x y z) =
+  square x + square y + square z
+
+sphere_differential : SurfaceDifferential Double
+sphere_differential (Point x y z) =
+  Covector
+    (2.0 * x)
+    (2.0 * y)
+    (2.0 * z)
+
+sphere_surface : LevelSetSurface Double
+sphere_surface =
+  LevelSet
+    0.52
+    sphere_field
+    sphere_differential
+
+front_material : Material Double
+front_material =
+  SurfaceMaterial
+    (RGB 0.90 0.47 0.18)
+    0.24
+    0.76
+    0.44
+    28.0
+
+back_material : Material Double
+back_material =
+  SurfaceMaterial
+    (RGB 0.93 0.76 0.40)
+    0.24
+    0.70
+    0.34
+    18.0
+
+background : Color3 Double
+background =
+  RGB 0.075 0.09 0.115
+
+lights : List (Light Double Double)
+lights =
+  [ PointLight
+      (Point (-3.0) 4.0 4.0)
+      (RGB 1.0 1.0 1.0)
+      0.72
+  , PointLight
+      (Point 4.0 2.0 3.0)
+      (RGB 0.92 0.96 1.0)
+      0.42
+  ]
+
+sphere_scene : Scene (LevelSetSurface Double) Double Double
+sphere_scene =
+  SurfaceScene
+    sphere_surface
+    front_material
+    back_material
+    background
+    lights
+
+color_of_trace : TraceResult Double Double → Color3 Double
+color_of_trace (Background color) = color
+color_of_trace (SurfaceHit _ _ _ color) = color
+
+trace_view_sample : ViewSample Double → Color3 Double
+trace_view_sample sample =
+  color_of_trace
+    (level_set_ray_tracer
+      first_level_set_hit
+      level_set_differential
+      surface_covector_to_camera_normal
+      sphere_scene
+      (orthographic_ray_creator sample))
+
+-- --------------------------------------------------------------------------
+-- PPM image output
+-- --------------------------------------------------------------------------
+
+image_width : Number
+image_width = 64
+
+image_height : Number
+image_height = 48
+
+vertical_half_extent : Double
+vertical_half_extent = 1.08
+
+horizontal_half_extent : Double
+horizontal_half_extent =
+  vertical_half_extent *
+  cast image_width /
+  cast image_height
+
+pixel_coordinate :
+  Number →
+  Number →
+  Double →
+  Double
+pixel_coordinate index count half_extent =
+  (-half_extent) +
+  2.0 * half_extent *
+  (cast index + 0.5) /
+  cast count
+
+channel_to_byte : Double → Int
+channel_to_byte value =
+  cast (floor (255.0 * clamp_channel value + 0.5))
+
+ppm_pixel : Color3 Double → Text
+ppm_pixel (RGB red green blue) =
+  show (channel_to_byte red) ++
+  " " ++
+  show (channel_to_byte green) ++
+  " " ++
+  show (channel_to_byte blue)
+
+render_row :
+  Number →
+  Number →
+  Number →
+  IO ()
+render_row Z _ _ = pure ()
+render_row (S remaining) x y = do
+  let u =
+        pixel_coordinate
+          x
+          image_width
+          horizontal_half_extent
+  let v =
+        pixel_coordinate
+          y
+          image_height
+          vertical_half_extent
+  putStrLn (ppm_pixel (trace_view_sample (SampleAt u v)))
+  render_row remaining (S x) y
+
+render_rows :
+  Number →
+  Number →
+  IO ()
+render_rows Z _ = pure ()
+render_rows (S remaining) y = do
+  render_row image_width Z y
+  render_rows remaining (S y)
+
+main : IO ()
+main = do
+  putStrLn "P3"
+  putStrLn (show image_width ++ " " ++ show image_height)
+  putStrLn "255"
+  render_rows image_height Z
