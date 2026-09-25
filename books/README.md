@@ -23,6 +23,8 @@ Stephanie Frank Singer is the closest single blueprint for the project: *Lineari
 - [Michael Monastyrsky — *Riemann, Topology, and Physics*](monastyrsky.md)
 - [William Lionel Burke](william-l-burke.md)
 - [David Hestenes — Oersted Medal Lecture: *Reforming the Mathematical Language of Physics*](hestenes-oersted.md)
+- [Bob Coecke and Aleks Kissinger — *Picturing Quantum Processes*](coecke-kissinger.md) — the spiders book; diagrams as mathematics
+- [Predrag Cvitanović — *Birdtracks*, *ChaosBook*, and Quefithe](predrag-cvitanovic.md) — diagrammatic group theory, geometric exposition, and the mole/crow fable
 - [William Fulton and Joe Harris — *Representation Theory: A First Course*](fulton-harris.md)
 - [Hong-Mo Chan and Sheung Tsun Tsou — *Some Elementary Gauge Theory Concepts*](chan-tsou.md)
 - [Richard Montgomery](richard-montgomery.md)
