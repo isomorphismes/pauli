@@ -1,5 +1,6 @@
 module RayTracer
 
+import Data.Text
 import RayTracerTypes
 
 %default total
