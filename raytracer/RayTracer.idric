@@ -484,8 +484,18 @@ trace_ray
 
 level_set_ray_tracer :
   RayTracer (LevelSetSurface Double) Double Double
-level_set_ray_tracer =
-  trace_ray
+level_set_ray_tracer
+  intersect_surface
+  evaluate_differential
+  transform_normal
+  scene
+  rays =
+    trace_ray
+      intersect_surface
+      evaluate_differential
+      transform_normal
+      scene
+      rays
 
 -- --------------------------------------------------------------------------
 -- First executable scene
