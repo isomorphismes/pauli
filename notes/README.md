@@ -19,6 +19,9 @@ These notes should not present a formula, integer label, or famous surname as th
 
 ## Geometry and symmetry
 
+- [Linearity before matrices](linearity-before-matrices.md)
+- [Electromagnetism as one 2-form](electromagnetism-as-forms.md)
+- [From geometry to the special functions](from-symmetry-to-special-functions.md)
 - [Coulomb geometry before the formula](coulomb-geometry.md)
 - [Structure before integer labels](labels-after-structure.md)
 - [Lagrangian, Hamiltonian, and Noether without teleology](lagrangian-hamiltonian-noether.md)
