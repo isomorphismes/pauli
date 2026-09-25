@@ -11,7 +11,7 @@ Build the APK with the smoke renderer, install it through the normal Android pac
 Required observations:
 
 - Activity launches without a Java/Kotlin application layer;
-- direct `classes.dex` is accepted by ART;
+- APK contains no `classes.dex`;
 - `libpauli.so` loads;
 - NativeActivity reaches `android_main`;
 - EGL surface/context is created;
@@ -86,7 +86,6 @@ A physical receipt should contain:
 
 ```text
 source.commit
-dex.backend.commit
 apk.sha256
 abi
 android.api
