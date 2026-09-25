@@ -193,6 +193,13 @@ SurfaceDifferential number =
   Covector3 number surface_space
 
 public export
+SurfaceDifferentialEvaluator : Type → Type → Type
+SurfaceDifferentialEvaluator surface_description number =
+  surface_description →
+  Point3 number surface_space →
+  Covector3 number surface_space
+
+public export
 data LevelSetSurface : Type → Type where
   LevelSet :
     {number : Type} →
@@ -344,6 +351,7 @@ public export
 RayTracer : Type → Type → Type → Type
 RayTracer surface_description geometry_number color_number =
   SurfaceIntersector surface_description geometry_number →
+  SurfaceDifferentialEvaluator surface_description geometry_number →
   SurfaceNormalTransformer geometry_number →
   Scene surface_description geometry_number color_number →
   RayBundle geometry_number →
