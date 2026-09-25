@@ -24,9 +24,10 @@ sage_directory=tools/generate/hydrogen/sage
 
 run_sage_python() {
     script_path=$1
+    shift
 
     if command -v sage >/dev/null 2>&1; then
-        sage -python "$script_path"
+        sage -python "$script_path" "$@"
         return
     fi
 
@@ -35,7 +36,7 @@ run_sage_python() {
             -v "$repo_root:/work:ro" \
             -w /work \
             sagemath/sagemath:10.8 \
-            sage -python "$script_path"
+            sage -python "$script_path" "$@"
         return
     fi
 
@@ -44,7 +45,7 @@ run_sage_python() {
             -v "$repo_root:/work:ro" \
             -w /work \
             docker.io/sagemath/sagemath:10.8 \
-            sage -python "$script_path"
+            sage -python "$script_path" "$@"
         return
     fi
 
