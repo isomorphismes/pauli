@@ -247,6 +247,10 @@ def render_header():
 #define PAULI_PI 3.141592653589793238462643383279502884
 #endif
 
+#ifndef M_SQRT2
+#define M_SQRT2 1.414213562373095048801688724209698079
+#endif
+
 /*
  * Polar Complex F64.
  *
