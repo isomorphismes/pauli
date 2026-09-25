@@ -1,4 +1,4 @@
-name: Idriç ray tracer type sketch
+name: Idriç ray tracer
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ on:
       - ".github/workflows/idric-raytracer-types.yml"
 
 jobs:
-  typecheck:
+  render:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,8 +34,41 @@ jobs:
       - name: Bootstrap pinned Idriç
         run: ./.idric-toolchain/edric bootstrap
 
-      - name: Typecheck ray tracer types
+      - name: Typecheck executable through Idriç handoff
         run: |
           ./.idric-toolchain/edric --emit-one-step \
-            "$GITHUB_WORKSPACE/raytracer/RayTracerTypes.idric" \
-            -o "$RUNNER_TEMP/raytracer-types.anf"
+            "$GITHUB_WORKSPACE/raytracer/RayTracer.idric" \
+            -o "$RUNNER_TEMP/raytracer.anf"
+
+      - name: Compile runnable Idriç ray tracer
+        run: |
+          support_root="$GITHUB_WORKSPACE/.idric-toolchain/_"
+          compiler="$support_root/build/exec/idris2"
+          library_path="$support_root/libs/prelude/build/ttc:$support_root/libs/base/build/ttc:$support_root/libs/linear/build/ttc:$support_root/libs/network/build/ttc:$support_root/libs/contrib/build/ttc:$support_root/libs/test/build/ttc:"
+          cd "$GITHUB_WORKSPACE/raytracer"
+          PATH="$support_root/.tools/bin:$PATH" \
+          IDRIS2_PREFIX="$support_root/bootstrap-build" \
+          IDRIS2_PATH="$library_path" \
+            "$compiler" --cg chez \
+              --output-dir "$RUNNER_TEMP" \
+              -o pauli-raytracer \
+              RayTracer.idric
+
+      - name: Render and inspect PPM frame
+        run: |
+          "$RUNNER_TEMP/pauli-raytracer" > "$RUNNER_TEMP/pauli-raytracer.ppm"
+          test "$(sed -n '1p' "$RUNNER_TEMP/pauli-raytracer.ppm")" = "P3"
+          test "$(sed -n '2p' "$RUNNER_TEMP/pauli-raytracer.ppm")" = "64 48"
+          test "$(sed -n '3p' "$RUNNER_TEMP/pauli-raytracer.ppm")" = "255"
+          pixel_count=$(tail -n +4 "$RUNNER_TEMP/pauli-raytracer.ppm" | wc -l)
+          test "$pixel_count" -eq 3072
+          distinct_pixels=$(tail -n +4 "$RUNNER_TEMP/pauli-raytracer.ppm" | sort -u | wc -l)
+          test "$distinct_pixels" -gt 8
+          printf 'pixels=%s distinct=%s\n' "$pixel_count" "$distinct_pixels"
+
+      - name: Retain rendered frame
+        uses: actions/upload-artifact@v4
+        with:
+          name: pauli-idric-raytracer-frame
+          path: ${{ runner.temp }}/pauli-raytracer.ppm
+          if-no-files-found: error
