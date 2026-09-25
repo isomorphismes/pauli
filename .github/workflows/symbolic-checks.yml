@@ -1,0 +1,70 @@
+name: symbolic checks
+
+on:
+  pull_request:
+    paths:
+      - "symbolic/**"
+      - ".github/workflows/symbolic-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "symbolic/**"
+      - ".github/workflows/symbolic-checks.yml"
+
+jobs:
+  hydrogen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sage exact checks
+        run: |
+          docker run --rm \
+            -v "$PWD:/work:ro" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python symbolic/check_hydrogen_states.py
+
+      - name: Independent SymPy checks
+        run: |
+          docker run --rm \
+            -v "$PWD:/work:ro" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python symbolic/check_with_sympy.py
+
+      - name: Generate Complex F64 evaluator
+        run: |
+          mkdir -p "$RUNNER_TEMP/pauli-generated"
+
+          docker run --rm \
+            -v "$PWD:/work:ro" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python symbolic/export_f64.py \
+            > "$RUNNER_TEMP/pauli-generated/hydrogen_spdf_f64.h"
+
+          docker run --rm \
+            -v "$PWD:/work:ro" \
+            -w /work \
+            sagemath/sagemath:10.8 \
+            sage -python symbolic/export_f64_receipts.py \
+            > "$RUNNER_TEMP/pauli-generated/f64_receipts.tsv"
+
+      - name: Check Complex F64 evaluator
+        run: |
+          cc \
+            -std=c99 \
+            -O2 \
+            -Wall \
+            -Wextra \
+            -pedantic \
+            -I "$RUNNER_TEMP/pauli-generated" \
+            symbolic/check_f64_runtime.c \
+            -lm \
+            -o "$RUNNER_TEMP/pauli-generated/check_f64_runtime"
+
+          "$RUNNER_TEMP/pauli-generated/check_f64_runtime" \
+            "$RUNNER_TEMP/pauli-generated/f64_receipts.tsv"
