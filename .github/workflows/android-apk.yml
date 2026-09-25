@@ -15,55 +15,11 @@ on:
 jobs:
   apk-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 35
 
     steps:
       - name: Check out Pauli
         uses: actions/checkout@v4
-
-      - name: Check out pinned DEX backend
-        uses: actions/checkout@v4
-        with:
-          repository: dilapidated-shed/idric-arm-thumb
-          ref: 33ae2f65a7cc8cf711171bf44543369cd95fce54
-          path: _deps/idric-arm-thumb
-          persist-credentials: false
-
-      - name: Check out pinned Idriç compiler
-        uses: actions/checkout@v4
-        with:
-          repository: dilapidated-shed/Idric
-          ref: 51e3892d4de59943e42e65c60a9814aba792c5d4
-          path: _deps/Idric
-          persist-credentials: false
-
-      - name: Install Idriç host dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends             bash build-essential ca-certificates chezscheme curl             default-jre-headless file libgmp-dev python3 zip
-
-      - name: Build pinned Idriç compiler and DEX backend
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          compiler_root="$GITHUB_WORKSPACE/_deps/Idric/_"
-          compiler="$compiler_root/build/exec/idris2"
-          backend="$GITHUB_WORKSPACE/_deps/idric-arm-thumb"
-
-          "$compiler_root/edric" bootstrap
-          "$compiler" --version
-
-          make -C "$compiler_root/support/chez"             install IDRIS2_VERSION=0.8.0
-          make -C "$compiler_root"             install-bootstrap-libs IDRIS2="$compiler"
-          make -C "$compiler_root"             install-api IDRIS2_BOOT="$compiler"
-
-          make -C "$backend" check driver             IDRIC="$compiler"             IDRIC_REPO="$GITHUB_WORKSPACE/_deps/Idric"             IDRIC_COMPILER_REF=51e3892d4de59943e42e65c60a9814aba792c5d4
-
-          {
-            echo "IDRIC=$compiler"
-            echo "IDRIC_DEX_REPO=$backend"
-          } >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
         with:
@@ -78,13 +34,7 @@ jobs:
         run: |
           sdkmanager             "platforms;android-36"             "build-tools;36.0.0"             "ndk;29.0.14206865"
 
-      - name: Generate direct DEX shell
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865
-          ANDROID_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/36.0.0
-        run: bash android/build-dex.sh
-
-      - name: Build APKs for phone, tablet, and emulator
+      - name: Build one-ABI native-only APKs
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865
           ANDROID_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/36.0.0
@@ -95,10 +45,22 @@ jobs:
           for abi in armeabi-v7a arm64-v8a x86_64; do
             ANDROID_ABI="$abi"               bash android/build-native.sh               "build/android/$abi/libpauli.so"
 
-            ANDROID_ABI="$abi"               bash android/build-apk.sh               build/android/classes.dex               "build/android/$abi/libpauli.so"               "build/android/pauli-$abi.apk"
+            ANDROID_ABI="$abi"               bash android/build-apk.sh               "build/android/$abi/libpauli.so"               "build/android/pauli-$abi.apk"
+
+            unzip -l "build/android/pauli-$abi.apk"               > "build/android/pauli-$abi.contents.txt"
+
+            grep -Fq "lib/$abi/libpauli.so"               "build/android/pauli-$abi.contents.txt"
+
+            ! grep -Fq "classes.dex"               "build/android/pauli-$abi.contents.txt"
+
+            for other in armeabi-v7a arm64-v8a x86 x86_64; do
+              if [[ $other != "$abi" ]]; then
+                ! grep -Fq "lib/$other/"                   "build/android/pauli-$abi.contents.txt"
+              fi
+            done
           done
 
-      - name: Exercise direct DEX + native shell on emulator
+      - name: Exercise DEX-free native viewer shell on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -113,7 +75,7 @@ jobs:
 
             apk=build/android/pauli-x86_64.apk
             package=org.isomorphisms.pauli
-            component="$package/.PauliActivity"
+            component="$package/android.app.NativeActivity"
             log=build/android/emulator.log
 
             adb install -r "$apk"
@@ -146,12 +108,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pauli-android-smoke
+          name: pauli-android-native-only
           path: |
-            build/android/classes.dex
             build/android/pauli-armeabi-v7a.apk
             build/android/pauli-arm64-v8a.apk
             build/android/pauli-x86_64.apk
+            build/android/pauli-*.contents.txt
             build/android/*/libpauli.so
             build/android/emulator.log
             build/android/emulator.png
