@@ -11,7 +11,7 @@ fi
 renderer_sources=("$@")
 if ((${#renderer_sources[@]} == 0)); then
     renderer_sources=(
-        "$repo_root/android/native/pauli_renderer_smoke.c"
+        "$repo_root/android/native/pauli_renderer_orbitals.c"
     )
 fi
 
