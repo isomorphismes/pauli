@@ -35,8 +35,42 @@ jobs:
           path: .idric-toolchain
           persist-credentials: false
 
+      - name: Restore pinned Idriç bootstrap
+        id: idric-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .idric-toolchain/_/.tools
+            .idric-toolchain/_/bootstrap-build
+            .idric-toolchain/_/build
+            .idric-toolchain/_/libs/prelude/build
+            .idric-toolchain/_/libs/base/build
+            .idric-toolchain/_/libs/linear/build
+            .idric-toolchain/_/libs/network/build
+            .idric-toolchain/_/libs/contrib/build
+            .idric-toolchain/_/libs/test/build
+            .idric-toolchain/_/libs/papers/build
+          key: idric-linux-51e3892d4de59943e42e65c60a9814aba792c5d4
+
       - name: Bootstrap pinned Idriç
         run: ./.idric-toolchain/edric bootstrap
+
+      - name: Save pinned Idriç bootstrap
+        if: steps.idric-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .idric-toolchain/_/.tools
+            .idric-toolchain/_/bootstrap-build
+            .idric-toolchain/_/build
+            .idric-toolchain/_/libs/prelude/build
+            .idric-toolchain/_/libs/base/build
+            .idric-toolchain/_/libs/linear/build
+            .idric-toolchain/_/libs/network/build
+            .idric-toolchain/_/libs/contrib/build
+            .idric-toolchain/_/libs/test/build
+            .idric-toolchain/_/libs/papers/build
+          key: idric-linux-51e3892d4de59943e42e65c60a9814aba792c5d4
 
       - name: Typecheck executable through Idriç handoff
         run: |
