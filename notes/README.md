@@ -10,6 +10,7 @@ These notes should not present a formula, integer label, or famous surname as th
 
 ## Spectral problems and functions
 
+- [What question does the Laplacian answer?](laplacian.md)
 - [Second-order equations and natural modes](second-order-and-modes.md)
 - [Sturm–Liouville: what problem was being solved?](sturm-liouville.md)
 - [Spherical harmonics before Legendre formulas](spherical-harmonics.md)
