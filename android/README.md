@@ -223,6 +223,18 @@ That is an Android packaging/release fact. It does **not** mean the orbital rend
 
 The native API floor remains independent and can stay low as long as the NDK/toolchain lane supports it.
 
+## Current smoke-package size
+
+The first DEX-free single-ABI CI packages are deliberately tiny:
+
+| target | APK | native library |
+| --- | ---: | ---: |
+| phone `armeabi-v7a` | 20,923 bytes | 27,348 bytes |
+| tablet `arm64-v8a` | 20,921 bytes | 28,984 bytes |
+| emulator `x86_64` | 20,918 bytes | 28,512 bytes |
+
+These numbers are only the Android-shell/smoke baseline, **before the real orbital renderer is linked**. They are useful as a floor and as evidence that the packaging itself is not dragging in a framework, DEX payload, or extra architectures.
+
 ## Startup target
 
 The first frame should require only:
