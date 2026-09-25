@@ -182,7 +182,7 @@ def book_items_html():
     return "\n".join(items)
 
 
-def update_file(path, sections):
+def expected_text(path, sections):
     text = path.read_text(encoding="utf-8")
 
     for name, replacement in sections:
@@ -192,30 +192,59 @@ def update_file(path, sections):
             replacement,
         )
 
-    path.write_text(text, encoding="utf-8")
+    return text
+
+
+def public_files():
+    return [
+        (
+            REPO_ROOT / "hydrogen.html",
+            [
+                ("angular", angular_html()),
+                ("radial", radial_html()),
+                ("counts", counts_html()),
+            ],
+        ),
+        (
+            REPO_ROOT / "books.html",
+            [
+                ("books", book_items_html()),
+            ],
+        ),
+    ]
 
 
 def main():
     verify()
+    check_only = "--check" in sys.argv
 
-    update_file(
-        REPO_ROOT / "hydrogen.html",
-        [
-            ("angular", angular_html()),
-            ("radial", radial_html()),
-            ("counts", counts_html()),
-        ],
-    )
+    for path, sections in public_files():
+        current = path.read_text(encoding="utf-8")
+        expected = expected_text(
+            path,
+            sections,
+        )
 
-    update_file(
-        REPO_ROOT / "books.html",
-        [
-            ("books", book_items_html()),
-        ],
+        if check_only:
+            if current != expected:
+                raise AssertionError(
+                    f"{path.name} is stale; "
+                    "regenerate it with update_public.py"
+                )
+        else:
+            path.write_text(
+                expected,
+                encoding="utf-8",
+            )
+
+    action = (
+        "verified"
+        if check_only
+        else "regenerated"
     )
 
     print(
-        "PASS: regenerated hydrogen.html "
+        f"PASS: {action} hydrogen.html "
         "and books.html from Sage results"
     )
 
