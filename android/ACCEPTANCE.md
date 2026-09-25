@@ -23,6 +23,19 @@ Required observations:
 
 The smoke renderer is not an orbital test.
 
+## Explanation-link acceptance
+
+The optional **Why is this happening?** control is a browser handoff, not an embedded teaching surface.
+
+Acceptance requires:
+
+- the orbital viewer launches and renders with no network connection;
+- rendering and rotation do not depend on the explanatory site;
+- activating the explanation control asks Android to open the configured URL externally;
+- failure to resolve or load that URL does not crash or disable the viewer;
+- returning from the browser restores the viewer normally;
+- no WebView or notebook runtime is required in the APK.
+
 ## 2. Orbital viewer acceptance
 
 Once the real renderer implements `pauli_renderer.h`, the physical test becomes:
