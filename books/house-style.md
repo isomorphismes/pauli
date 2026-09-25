@@ -13,6 +13,26 @@ The central references are:
 - [Jesper Lützen](jesper-lutzen.md): detailed scholarship with visible organization; distinguish historical development from modern reconstruction.
 - [William L. Burke](william-l-burke.md): identify the geometric object before coordinate machinery.
 - [David Hestenes](hestenes-oersted.md): do not let inherited three-dimensional notation hide the underlying geometric object.
+- [Bob Coecke and Aleks Kissinger](coecke-kissinger.md): when composition or contraction is the mathematics, let the diagram carry the mathematics.
+- [Predrag Cvitanović](predrag-cvitanovic.md): use pictures as exact reasoning, permit personality, and return from formal derivation to geometric meaning.
+
+## Coecke/Kissinger rule: diagrams are allowed to be the proof language
+
+Do not treat every serious statement as if it must first be written with indices.
+
+When composition, contraction, or connectivity is the central structure, draw it.
+
+A good diagram is not a decorative duplicate of an equation. It should make at least one algebraic fact easier to see.
+
+## Cvitanović rule: come back to the object
+
+A long derivation is not finished when the last equality is written.
+
+Come back and say what the calculation means geometrically or physically.
+
+Technical writing may have personality. A memorable name, joke, fable, or picture is useful when it helps the reader retain a real structural distinction.
+
+Quefithe is a standing reminder that two formalisms can look completely different while describing the same physical world. The translation between them is itself worth explaining.
 
 ## Primary rule
 
