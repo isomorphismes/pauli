@@ -1,0 +1,69 @@
+name: Android phone APK
+
+on:
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/android-phone-apk.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "android/**"
+      - ".github/workflows/android-phone-apk.yml"
+  workflow_dispatch:
+
+jobs:
+  phone-apk:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android build inputs
+        run: |
+          sdkmanager \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;29.0.14206865"
+
+      - name: Build MIRO APK
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865
+          ANDROID_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/36.0.0
+          ANDROID_COMPILE_SDK: "36"
+          ANDROID_ABI: armeabi-v7a
+        run: |
+          set -Eeuo pipefail
+          bash android/build-native.sh \
+            build/android/armeabi-v7a/libpauli.so
+          bash android/build-apk.sh \
+            build/android/armeabi-v7a/libpauli.so \
+            build/android/pauli-armeabi-v7a.apk
+          unzip -l build/android/pauli-armeabi-v7a.apk \
+            > build/android/pauli-armeabi-v7a.contents.txt
+          grep -Fq "lib/armeabi-v7a/libpauli.so" \
+            build/android/pauli-armeabi-v7a.contents.txt
+          ! grep -Fq "classes.dex" \
+            build/android/pauli-armeabi-v7a.contents.txt
+          sha256sum build/android/pauli-armeabi-v7a.apk \
+            > build/android/pauli-armeabi-v7a.sha256
+
+      - name: Retain MIRO APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pauli-miro-orbital-apk
+          path: |
+            build/android/pauli-armeabi-v7a.apk
+            build/android/pauli-armeabi-v7a.contents.txt
+            build/android/pauli-armeabi-v7a.sha256
+          if-no-files-found: error

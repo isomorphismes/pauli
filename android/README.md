@@ -13,7 +13,9 @@ The first useful product is simple:
 
 ## Current status
 
-This branch defines and stubs the Android delivery boundary. The included smoke renderer proves only lifecycle/input/EGL packaging once built; it deliberately does **not** claim orbital rendering yet. The ray-tracer track can replace that one file without changing the Android shell.
+The Android shell and the first orbital renderer are connected. The default native build renders a 2p_x hydrogen state immediately, rotates it on drag, and cycles representative s, p, d, and f states on tap. The renderer uses a bounded 128 × 128 Float32 CPU volume pass and uploads the packed RGB frame through GLES, keeping Android lifecycle/input code separate behind `pauli_renderer.h`.
+
+`pauli_renderer_smoke.c` remains available as a packaging/input probe, but it is no longer the default application renderer.
 
 Android NDK NativeActivity reference:
 

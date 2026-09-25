@@ -369,6 +369,7 @@ void android_main(struct android_app *app) {
                 continue;
             }
 
+            PAULI_LOG("frame presented");
             state.redraw = false;
         }
     }
