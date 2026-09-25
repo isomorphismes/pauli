@@ -61,8 +61,7 @@ browser / explanatory site
 The preferred installed shape is:
 
 ```text
-direct classes.dex
-    tiny NativeActivity shell
+Android framework NativeActivity
           |
           v
 libpauli.so
@@ -76,9 +75,7 @@ renderer
 precomputed orbital data
 ```
 
-The DEX layer is deliberately boring. It exists because Android expects an Activity-shaped class boundary. It should not own the orbital calculation, the render loop, or per-frame state.
-
-The direct Idriç DEX backend already has a generic NativeActivity-shell encoder. Pauli should consume that boundary rather than introducing Java, Kotlin, Gradle, or d8 merely to get an Activity.
+There is no application DEX layer in the production package. Android's built-in `android.app.NativeActivity` is declared directly in the manifest with `android:hasCode="false"`, and it loads `libpauli.so`.
 
 The native library owns:
 
@@ -166,9 +163,11 @@ If the eventual ray tracer needs specialization, specialize at build time and pa
 
 ### DEX
 
-Use direct DEX for the tiny Android class shell.
+The production viewer has no `classes.dex`.
 
-The existing backend already proves that a directly encoded class can extend `android.app.NativeActivity` without Java or Kotlin source.
+Android provides `android.app.NativeActivity` as a framework class, so the manifest can name it directly. This is smaller and removes ART application bytecode from the launch path entirely.
+
+Keep the direct Idriç DEX backend as a separate capability for applications that genuinely need their own framework-facing class logic; Pauli does not.
 
 ### JNI
 
@@ -265,8 +264,7 @@ This keeps battery use and latency appropriate for a viewer rather than a game l
 
 Pauli should reuse rather than duplicate:
 
-- direct DEX NativeActivity shell from `dilapidated-shed/idric-arm-thumb`;
 - Android ELF/ABI discipline from `dilapidated-shed/ick`;
 - EGL/GLES target evidence from `dilapidated-shed/idris-shader-backend`.
 
-The Pauli repository owns the application contract and the orbital renderer integration. It should not grow another DEX encoder or another generic Android compiler.
+The Pauli repository owns the application contract and the orbital renderer integration. The production viewer should stay native-only unless a future feature demonstrates a real need for application DEX.
