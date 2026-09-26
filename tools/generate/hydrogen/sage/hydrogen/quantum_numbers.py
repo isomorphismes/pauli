@@ -28,9 +28,11 @@ def check_radial_numbers(
     angular_degree,
 ):
     check_energy_level(energy_level)
-    check_angular_degree(angular_degree)
 
-    if angular_degree >= energy_level:
+    if (
+        angular_degree < 0
+        or angular_degree >= energy_level
+    ):
         raise ValueError(
             "angular_degree must satisfy "
             "0 <= angular_degree < energy_level"
