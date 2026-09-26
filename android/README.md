@@ -11,6 +11,34 @@ The first useful product is simple:
 - do no network work;
 - do no source parsing or symbolic algebra on the phone.
 
+## Signing identity
+
+APK signing is fail-closed.
+
+`android/build-apk.sh` never generates a keystore and never selects a fallback
+key.  A caller must provide the keystore, type, alias, passwords, and the
+expected SHA-256 certificate fingerprint.  The script verifies the keystore
+certificate before signing, verifies the finished APK signer afterward, and
+writes a `.signing.tsv` receipt beside the APK.
+
+The ordinary sideload/test lane currently uses the same stable public test
+signer already used by Wegert/Conway. The authoritative package/lane →
+certificate mapping lives in the pinned `ai-ci/android-signing` registry, not
+in this repository.
+
+CI loads the expected Pauli test fingerprint from that registry, verifies the
+keystore certificate before signing, and then runs the pinned central
+`android-signing` action against the finished APK before artifact upload.
+
+A missing key, wrong alias, wrong password, changed certificate, multiple or
+unexpected APK signer, unregistered package/lane, or missing expected
+fingerprint is a build/publication failure. There is no automatic key creation.
+
+A future private release signer is a separate identity.  It must be supplied
+explicitly with its own pinned certificate fingerprint; changing from the test
+signer to a release signer is an intentional package-signing migration, never
+a CI fallback.
+
 ## Current status
 
 The Android shell and the first orbital renderer are connected. The default native build renders a 2p_x hydrogen state immediately, rotates it on drag, and cycles representative s, p, d, and f states on tap. The renderer uses a bounded 128 × 128 Float32 CPU volume pass and uploads the packed RGB frame through GLES, keeping Android lifecycle/input code separate behind `pauli_renderer.h`.

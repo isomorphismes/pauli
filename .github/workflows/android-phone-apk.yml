@@ -20,6 +20,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check out stable public test signer
+        uses: actions/checkout@v4
+        with:
+          repository: isomorphismes/wegert
+          ref: 89dcfb840cec1a66ee04c7f7404954cbd6c09839
+          path: .test-signing
+          sparse-checkout: _/build/app/wegert-debug.keystore
+          sparse-checkout-cone-mode: false
+
+      - name: Check out central signing policy
+        uses: actions/checkout@v4
+        with:
+          repository: isomorphisms/ai-ci
+          ref: f0cc1a0473422aa5562911beb8a30baa2f6cb49c
+          path: .signing-policy
+          sparse-checkout: android-signing/identities.tsv
+          sparse-checkout-cone-mode: false
+
+      - name: Load registered Pauli test signer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          registry=.signing-policy/android-signing/identities.tsv
+          signer=$(
+            awk -F '\t' \
+              '$1 == "org.isomorphisms.pauli" && $2 == "test" { print $3 }' \
+              "$registry"
+          )
+          count=$(printf '%s\n' "$signer" | sed '/^$/d' | wc -l)
+          [[ $count -eq 1 ]] || {
+            echo "Pauli test signer registry entry count is $count" >&2
+            exit 1
+          }
+          printf 'PAULI_EXPECTED_CERT_SHA256=%s\n' "$signer" >> "$GITHUB_ENV"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -42,10 +77,51 @@ jobs:
           ANDROID_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/36.0.0
           ANDROID_COMPILE_SDK: "36"
           ANDROID_ABI: armeabi-v7a
+          PAULI_KEYSTORE: ${{ github.workspace }}/.test-signing/_/build/app/wegert-debug.keystore
+          PAULI_KEYSTORE_TYPE: PKCS12
+          PAULI_KEY_ALIAS: wegert-debug
+          PAULI_STORE_PASSWORD: wegert-debug
+          PAULI_KEY_PASSWORD: wegert-debug
         run: |
           set -Eeuo pipefail
           bash android/build-native.sh \
             build/android/armeabi-v7a/libpauli.so
+
+          # Hostile case 1: no signer identity is never allowed to fall back.
+          if env \
+              -u PAULI_KEYSTORE \
+              -u PAULI_KEYSTORE_TYPE \
+              -u PAULI_KEY_ALIAS \
+              -u PAULI_STORE_PASSWORD \
+              -u PAULI_KEY_PASSWORD \
+              -u PAULI_EXPECTED_CERT_SHA256 \
+              bash android/build-apk.sh \
+                build/android/armeabi-v7a/libpauli.so \
+                build/android/should-not-exist-missing-signer.apk \
+                > build/android/missing-signer.log 2>&1
+          then
+            echo "missing signer unexpectedly produced an APK" >&2
+            exit 1
+          fi
+          grep -Fq "required signing value is unset" \
+            build/android/missing-signer.log
+          test ! -e build/android/should-not-exist-missing-signer.apk
+
+          # Hostile case 2: a key whose certificate is not the registered
+          # identity is rejected before any APK can be published.
+          if PAULI_EXPECTED_CERT_SHA256=0000000000000000000000000000000000000000000000000000000000000000 \
+              bash android/build-apk.sh \
+                build/android/armeabi-v7a/libpauli.so \
+                build/android/should-not-exist-wrong-signer.apk \
+                > build/android/wrong-signer.log 2>&1
+          then
+            echo "wrong signer unexpectedly produced an APK" >&2
+            exit 1
+          fi
+          grep -Fq "keystore certificate changed" \
+            build/android/wrong-signer.log
+          test ! -e build/android/should-not-exist-wrong-signer.apk
+
           bash android/build-apk.sh \
             build/android/armeabi-v7a/libpauli.so \
             build/android/pauli-armeabi-v7a.apk
@@ -58,6 +134,12 @@ jobs:
           sha256sum build/android/pauli-armeabi-v7a.apk \
             > build/android/pauli-armeabi-v7a.sha256
 
+      - name: Verify finished MIRO APK signer
+        uses: isomorphisms/ai-ci/android-signing@f0cc1a0473422aa5562911beb8a30baa2f6cb49c
+        with:
+          apk: build/android/pauli-armeabi-v7a.apk
+          lane: test
+
       - name: Retain MIRO APK
         uses: actions/upload-artifact@v4
         with:
@@ -66,4 +148,5 @@ jobs:
             build/android/pauli-armeabi-v7a.apk
             build/android/pauli-armeabi-v7a.contents.txt
             build/android/pauli-armeabi-v7a.sha256
+            build/android/pauli-armeabi-v7a.signing.tsv
           if-no-files-found: error

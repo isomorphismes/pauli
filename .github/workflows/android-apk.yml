@@ -21,6 +21,41 @@ jobs:
       - name: Check out Pauli
         uses: actions/checkout@v4
 
+      - name: Check out stable public test signer
+        uses: actions/checkout@v4
+        with:
+          repository: isomorphismes/wegert
+          ref: 89dcfb840cec1a66ee04c7f7404954cbd6c09839
+          path: .test-signing
+          sparse-checkout: _/build/app/wegert-debug.keystore
+          sparse-checkout-cone-mode: false
+
+      - name: Check out central signing policy
+        uses: actions/checkout@v4
+        with:
+          repository: isomorphisms/ai-ci
+          ref: f0cc1a0473422aa5562911beb8a30baa2f6cb49c
+          path: .signing-policy
+          sparse-checkout: android-signing/identities.tsv
+          sparse-checkout-cone-mode: false
+
+      - name: Load registered Pauli test signer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          registry=.signing-policy/android-signing/identities.tsv
+          signer=$(
+            awk -F '\t' \
+              '$1 == "org.isomorphisms.pauli" && $2 == "test" { print $3 }' \
+              "$registry"
+          )
+          count=$(printf '%s\n' "$signer" | sed '/^$/d' | wc -l)
+          [[ $count -eq 1 ]] || {
+            echo "Pauli test signer registry entry count is $count" >&2
+            exit 1
+          }
+          printf 'PAULI_EXPECTED_CERT_SHA256=%s\n' "$signer" >> "$GITHUB_ENV"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -39,6 +74,11 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865
           ANDROID_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/36.0.0
           ANDROID_COMPILE_SDK: "36"
+          PAULI_KEYSTORE: ${{ github.workspace }}/.test-signing/_/build/app/wegert-debug.keystore
+          PAULI_KEYSTORE_TYPE: PKCS12
+          PAULI_KEY_ALIAS: wegert-debug
+          PAULI_STORE_PASSWORD: wegert-debug
+          PAULI_KEY_PASSWORD: wegert-debug
         run: |
           set -Eeuo pipefail
 
@@ -60,6 +100,24 @@ jobs:
             done
           done
 
+      - name: Verify phone APK signer
+        uses: isomorphisms/ai-ci/android-signing@f0cc1a0473422aa5562911beb8a30baa2f6cb49c
+        with:
+          apk: build/android/pauli-armeabi-v7a.apk
+          lane: test
+
+      - name: Verify tablet APK signer
+        uses: isomorphisms/ai-ci/android-signing@f0cc1a0473422aa5562911beb8a30baa2f6cb49c
+        with:
+          apk: build/android/pauli-arm64-v8a.apk
+          lane: test
+
+      - name: Verify emulator APK signer
+        uses: isomorphisms/ai-ci/android-signing@f0cc1a0473422aa5562911beb8a30baa2f6cb49c
+        with:
+          apk: build/android/pauli-x86_64.apk
+          lane: test
+
       - name: Exercise DEX-free native viewer shell on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -72,8 +130,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -no-metrics
           script: sh android/emulator-smoke.sh
 
-      - name: Retain installable APKs and receipts
-        if: always()
+      - name: Publish verified APKs and signing receipts
         uses: actions/upload-artifact@v4
         with:
           name: pauli-android-native-only
@@ -82,7 +139,16 @@ jobs:
             build/android/pauli-arm64-v8a.apk
             build/android/pauli-x86_64.apk
             build/android/pauli-*.contents.txt
+            build/android/pauli-*.signing.tsv
             build/android/*/libpauli.so
+          if-no-files-found: error
+
+      - name: Retain emulator evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pauli-android-emulator-evidence
+          path: |
             build/android/emulator.log
             build/android/emulator.png
           if-no-files-found: warn
