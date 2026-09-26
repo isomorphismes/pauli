@@ -17,16 +17,20 @@ case "$abi" in
         ;;
 esac
 
-[[ -f $native_library ]] || {
-    printf 'missing native library: %s\n' "$native_library" >&2
+fail() {
+    printf 'Pauli APK signing failed: %s\n' "$*" >&2
     exit 1
 }
 
-android_home=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}
-[[ -n $android_home ]] || {
-    echo 'ANDROID_HOME or ANDROID_SDK_ROOT is required' >&2
-    exit 1
+require_value() {
+    local name=$1
+    [[ -n ${!name:-} ]] || fail "required signing value is unset: $name"
 }
+
+[[ -f $native_library ]] || fail "missing native library: $native_library"
+
+android_home=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}
+[[ -n $android_home ]] || fail 'ANDROID_HOME or ANDROID_SDK_ROOT is required'
 
 build_tools=${ANDROID_BUILD_TOOLS:-}
 if [[ -z $build_tools ]]; then
@@ -44,11 +48,53 @@ apksigner="$build_tools/apksigner"
 android_jar="$android_home/platforms/android-$compile_sdk/android.jar"
 
 for required in "$aapt2" "$zipalign" "$apksigner" "$android_jar"; do
-    [[ -e $required ]] || {
-        printf 'missing Android packaging input: %s\n' "$required" >&2
-        exit 1
-    }
+    [[ -e $required ]] || fail "missing Android packaging input: $required"
 done
+command -v keytool >/dev/null 2>&1 || fail 'keytool is required'
+command -v sha256sum >/dev/null 2>&1 || fail 'sha256sum is required'
+
+# Signing is deliberately fail-closed.  This script never creates a key and
+# never chooses a fallback identity.  Every caller must name the intended
+# signer and its pinned certificate fingerprint.
+for name in \
+    PAULI_KEYSTORE \
+    PAULI_KEYSTORE_TYPE \
+    PAULI_KEY_ALIAS \
+    PAULI_STORE_PASSWORD \
+    PAULI_KEY_PASSWORD \
+    PAULI_EXPECTED_CERT_SHA256
+do
+    require_value "$name"
+done
+
+keystore=$PAULI_KEYSTORE
+keystore_type=$PAULI_KEYSTORE_TYPE
+key_alias=$PAULI_KEY_ALIAS
+store_password=$PAULI_STORE_PASSWORD
+key_password=$PAULI_KEY_PASSWORD
+expected_cert_sha256=$(
+    printf '%s' "$PAULI_EXPECTED_CERT_SHA256" |
+        tr '[:upper:]' '[:lower:]' |
+        tr -d ':[:space:]'
+)
+
+[[ $expected_cert_sha256 =~ ^[0-9a-f]{64}$ ]] ||
+    fail 'PAULI_EXPECTED_CERT_SHA256 is not a SHA-256 certificate digest'
+[[ -f $keystore ]] || fail "required keystore is missing: $keystore"
+
+keystore_cert_sha256=$(
+    keytool -exportcert \
+        -keystore "$keystore" \
+        -storetype "$keystore_type" \
+        -storepass "$store_password" \
+        -alias "$key_alias" \
+        2>/dev/null |
+    sha256sum |
+    awk '{print $1}'
+)
+
+[[ $keystore_cert_sha256 == "$expected_cert_sha256" ]] ||
+    fail "keystore certificate changed: expected $expected_cert_sha256 got $keystore_cert_sha256"
 
 work="$repo_root/build/android/apk-work-$abi"
 rm -rf "$work"
@@ -77,36 +123,48 @@ cp "$manifest_apk" "$unaligned"
 # ELF load-segment alignment is handled by build-native.sh.
 "$zipalign" -f 4 "$unaligned" "$aligned"
 
-keystore=${PAULI_KEYSTORE:-"$HOME/.config/pauli/debug.keystore"}
-key_alias=${PAULI_KEY_ALIAS:-androiddebugkey}
-key_password=${PAULI_KEY_PASSWORD:-android}
-
-if [[ ! -f $keystore ]]; then
-    mkdir -p "$(dirname -- "$keystore")"
-    chmod 700 "$(dirname -- "$keystore")"
-
-    keytool -genkeypair -noprompt \
-        -keystore "$keystore" \
-        -storepass "$key_password" \
-        -keypass "$key_password" \
-        -alias "$key_alias" \
-        -dname 'CN=Pauli Debug,O=Pauli,C=US' \
-        -keyalg RSA \
-        -keysize 2048 \
-        -validity 10000 >/dev/null 2>&1
-fi
+receipt="${output%.apk}.signing.tsv"
+rm -f "$output" "$receipt"
 
 "$apksigner" sign \
     --ks "$keystore" \
-    --ks-pass "pass:$key_password" \
+    --ks-type "$keystore_type" \
+    --ks-pass "pass:$store_password" \
     --key-pass "pass:$key_password" \
     --ks-key-alias "$key_alias" \
     --out "$output" \
     "$aligned"
 
-"$apksigner" verify --verbose "$output"
+cert_report=$("$apksigner" verify --verbose --print-certs "$output" 2>&1)
+printf '%s\n' "$cert_report"
+
+apk_cert_sha256=$(
+    printf '%s\n' "$cert_report" |
+        sed -n 's/^.*certificate SHA-256 digest:[[:space:]]*//p' |
+        tr '[:upper:]' '[:lower:]' |
+        tr -d ':[:space:]' |
+        sort -u
+)
+
+[[ $apk_cert_sha256 == "$expected_cert_sha256" ]] ||
+    fail "finished APK signer changed: expected $expected_cert_sha256 got ${apk_cert_sha256:-missing}"
+
+apk_sha256=$(sha256sum "$output" | awk '{print $1}')
+
+{
+    printf 'schema\tandroid-signing-v1\n'
+    printf 'package\torg.isomorphisms.pauli\n'
+    printf 'abi\t%s\n' "$abi"
+    printf 'apk_sha256\t%s\n' "$apk_sha256"
+    printf 'signer_cert_sha256\t%s\n' "$apk_cert_sha256"
+    printf 'expected_signer_cert_sha256\t%s\n' "$expected_cert_sha256"
+    printf 'key_alias\t%s\n' "$key_alias"
+    printf 'source_commit\t%s\n' "${GITHUB_SHA:-local}"
+} > "$receipt"
 
 printf 'APK ABI                 %s\n' "$abi"
 printf 'APK target API          %s\n' 36
 printf 'APK                     %s\n' "$output"
-printf 'signing key             %s\n' "$keystore"
+printf 'APK SHA-256             %s\n' "$apk_sha256"
+printf 'signer certificate      %s\n' "$apk_cert_sha256"
+printf 'signing receipt         %s\n' "$receipt"
