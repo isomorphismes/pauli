@@ -1,0 +1,76 @@
+START HERE
+
+This directory is organized around several related mathematical roles.
+There is no single main function and no single module that everything flows through.
+
+A useful reading order is:
+
+    1. state.py
+       The shortest view of a complete hydrogen state:
+           bound_state = radial_mode * angular_mode
+
+    2. radial.py
+       How the radius-dependent part is constructed.
+
+    3. angular.py
+       How the angle-dependent part is constructed.
+
+    4. equations.py
+       How radial, angular, and complete states are checked against
+       their differential equations.
+
+    5. inner_products.py
+       Normalization and orthogonality operations.
+
+    6. catalogue.py
+       Which allowed (n, l, m) combinations are generated.
+
+Supporting files:
+
+    quantum_numbers.py
+        Rules for allowed n, l, and m values.
+
+    coordinates.py
+        Shared radius and angle symbols.
+
+    symbolic.py
+        Shared symbolic simplification.
+
+How the surrounding program reaches this code:
+
+    hydrogen_states.py
+        Compatibility facade. Existing scripts import the old public names
+        from here; it forwards those names into the smaller modules.
+
+    check_hydrogen_states.py
+        Gets the state catalogues and asks equations.py to verify the radial,
+        angular, and full stationary equations.
+
+    export_polar_f64.py
+        Gets the state catalogue, calls bound_state(), and converts each
+        symbolic state into the generated runtime representation.
+
+    export_polar_f64_receipts.py
+        Evaluates the same generated states at sample points for runtime checks.
+
+    derive.py
+        A separate derivation/explanation path showing where some of the
+        mathematical forms come from. It is not the runtime call path.
+
+One useful dependency sketch is:
+
+    check_hydrogen_states.py
+        -> catalogue.py
+        -> equations.py
+             -> state.py
+                  -> radial.py
+                  -> angular.py
+
+    export_polar_f64.py
+        -> catalogue.py
+        -> state.py
+             -> radial.py
+             -> angular.py
+
+So state.py is a reasonable first concrete file to read, but it is not the
+center of the whole package.
