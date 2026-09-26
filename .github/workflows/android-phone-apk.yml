@@ -61,6 +61,42 @@ jobs:
           set -Eeuo pipefail
           bash android/build-native.sh \
             build/android/armeabi-v7a/libpauli.so
+
+          # Hostile case 1: no signer identity is never allowed to fall back.
+          if env \
+              -u PAULI_KEYSTORE \
+              -u PAULI_KEYSTORE_TYPE \
+              -u PAULI_KEY_ALIAS \
+              -u PAULI_STORE_PASSWORD \
+              -u PAULI_KEY_PASSWORD \
+              -u PAULI_EXPECTED_CERT_SHA256 \
+              bash android/build-apk.sh \
+                build/android/armeabi-v7a/libpauli.so \
+                build/android/should-not-exist-missing-signer.apk \
+                > build/android/missing-signer.log 2>&1
+          then
+            echo "missing signer unexpectedly produced an APK" >&2
+            exit 1
+          fi
+          grep -Fq "required signing value is unset" \
+            build/android/missing-signer.log
+          test ! -e build/android/should-not-exist-missing-signer.apk
+
+          # Hostile case 2: a key whose certificate is not the registered
+          # identity is rejected before any APK can be published.
+          if PAULI_EXPECTED_CERT_SHA256=0000000000000000000000000000000000000000000000000000000000000000 \
+              bash android/build-apk.sh \
+                build/android/armeabi-v7a/libpauli.so \
+                build/android/should-not-exist-wrong-signer.apk \
+                > build/android/wrong-signer.log 2>&1
+          then
+            echo "wrong signer unexpectedly produced an APK" >&2
+            exit 1
+          fi
+          grep -Fq "keystore certificate changed" \
+            build/android/wrong-signer.log
+          test ! -e build/android/should-not-exist-wrong-signer.apk
+
           bash android/build-apk.sh \
             build/android/armeabi-v7a/libpauli.so \
             build/android/pauli-armeabi-v7a.apk
