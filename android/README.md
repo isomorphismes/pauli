@@ -22,13 +22,17 @@ certificate before signing, verifies the finished APK signer afterward, and
 writes a `.signing.tsv` receipt beside the APK.
 
 The ordinary sideload/test lane currently uses the same stable public test
-signer already used by Wegert/Conway:
+signer already used by Wegert/Conway. The authoritative package/lane →
+certificate mapping lives in the pinned `ai-ci/android-signing` registry, not
+in this repository.
 
-`de9b1d47c5a65e6d46a204b79dd9ee566b9d3c9832ba81ebc4213d3392e92ff9`.
+CI loads the expected Pauli test fingerprint from that registry, verifies the
+keystore certificate before signing, and then runs the pinned central
+`android-signing` action against the finished APK before artifact upload.
 
 A missing key, wrong alias, wrong password, changed certificate, multiple or
-unexpected APK signer, or missing expected fingerprint is a build failure.
-There is no automatic key creation.
+unexpected APK signer, unregistered package/lane, or missing expected
+fingerprint is a build/publication failure. There is no automatic key creation.
 
 A future private release signer is a separate identity.  It must be supplied
 explicitly with its own pinned certificate fingerprint; changing from the test
