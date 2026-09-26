@@ -12,6 +12,10 @@ renderer_sources=("$@")
 if ((${#renderer_sources[@]} == 0)); then
     renderer_sources=(
         "$repo_root/android/native/pauli_renderer_orbitals.c"
+        "$repo_root/android/native/pauli_orbital.c"
+        "$repo_root/android/native/pauli_color.c"
+        "$repo_root/android/native/pauli_volume_image.c"
+        "$repo_root/android/native/pauli_gles_image.c"
     )
 fi
 
