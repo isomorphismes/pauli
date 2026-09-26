@@ -4,6 +4,8 @@
 
 #include <stddef.h>
 
+#include "pauli_color.h"
+
 static int current_width = 1;
 static int current_height = 1;
 
@@ -264,10 +266,13 @@ void pauli_gles_image_draw(void) {
         current_height
     );
 
+    const struct pauli_rgb background =
+        pauli_background_color();
+
     glClearColor(
-        0.075f,
-        0.090f,
-        0.115f,
+        background.red,
+        background.green,
+        background.blue,
         1.0f
     );
     glClear(GL_COLOR_BUFFER_BIT);
