@@ -37,6 +37,40 @@ if len(states) != 30:
         f"got {len(states)}"
     )
 
+projected_radial_modes = list(
+    dict.fromkeys(
+        (energy_level, angular_degree)
+        for (
+            energy_level,
+            angular_degree,
+            _,
+        ) in states
+    )
+)
+
+if projected_radial_modes != radial_modes:
+    raise AssertionError(
+        "full state catalogue does not project "
+        "to the radial-mode catalogue"
+    )
+
+projected_sphere_modes = list(
+    dict.fromkeys(
+        (angular_degree, axis_component)
+        for (
+            _,
+            angular_degree,
+            axis_component,
+        ) in states
+    )
+)
+
+if projected_sphere_modes != sphere_modes:
+    raise AssertionError(
+        "full state catalogue does not project "
+        "to the angular-mode catalogue"
+    )
+
 for energy_level, angular_degree in radial_modes:
     require_zero(
         (
