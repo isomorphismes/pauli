@@ -1,0 +1,24 @@
+name: D basic Pauli
+
+on:
+  push:
+    branches:
+      - d/basic-pauli
+  pull_request:
+    paths:
+      - 'd/basic/**'
+      - 'android/native/pauli_renderer_orbitals.c'
+      - '.github/workflows/d-basic-pauli.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GDC
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdc
+      - name: Check retained C against D translation
+        run: sh ./d/basic/check.sh
