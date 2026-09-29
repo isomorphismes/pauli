@@ -314,4 +314,4 @@ The Pauli repository owns the application contract and the orbital renderer inte
 
 ## Cross-project Android boundary
 
-The reusable DEX/JNI/NDK, NativeActivity, and APK architecture lives in [isomorphisms/android-NDK](https://github.com/isomorphisms/android-NDK/blob/ndk-dex-jni-migration/ARCHITECTURE.md). Pauli remains a NativeActivity consumer: orbital data, renderer decisions, and native-only package acceptance stay here; no application DEX becomes required.
+The reusable DEX/JNI/NDK, NativeActivity, and APK architecture lives in [isomorphisms/android-NDK](https://github.com/isomorphisms/android-NDK/blob/main/ARCHITECTURE.md). Pauli remains a NativeActivity consumer: orbital data, renderer decisions, and native-only package acceptance stay here; no application DEX becomes required.
