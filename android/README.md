@@ -310,3 +310,8 @@ Pauli should reuse rather than duplicate:
 - EGL/GLES target evidence from `dilapidated-shed/idris-shader-backend`.
 
 The Pauli repository owns the application contract and the orbital renderer integration. The production viewer should stay native-only unless a future feature demonstrates a real need for application DEX.
+
+
+## Cross-project Android boundary
+
+The reusable DEX/JNI/NDK, NativeActivity, and APK architecture lives in [isomorphisms/android-NDK](https://github.com/isomorphisms/android-NDK/blob/ndk-dex-jni-migration/ARCHITECTURE.md). Pauli remains a NativeActivity consumer: orbital data, renderer decisions, and native-only package acceptance stay here; no application DEX becomes required.
