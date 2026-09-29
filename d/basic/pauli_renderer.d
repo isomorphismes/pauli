@@ -1,6 +1,5 @@
 module pauli_renderer;
 
-import core.stdc.stddef : ptrdiff_t;
 import pauli_orbitals :
     OrbitalState,
     background_blue,
