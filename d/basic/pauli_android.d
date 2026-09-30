@@ -173,7 +173,7 @@ private struct PauliAndroidState {
     float previous_y = 0.0f;
 }
 
-private immutable(char)[] log_tag = "PauliNative";
+private enum log_tag = "PauliNative";
 
 private void log_native_entry() {
     __android_log_print(
