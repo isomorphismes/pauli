@@ -131,7 +131,7 @@ private immutable GLfloat[24] quad_vertices = [
     -1.0f,  1.0f, 0.0f, 1.0f
 ];
 
-private immutable(char)[] vertex_shader_source =
+private enum vertex_shader_source =
     "attribute vec2 a_position;\n"
     ~ "attribute vec2 a_tex_coord;\n"
     ~ "uniform vec2 u_screen_scale;\n"
@@ -141,7 +141,7 @@ private immutable(char)[] vertex_shader_source =
     ~ "    gl_Position = vec4(a_position * u_screen_scale, 0.0, 1.0);\n"
     ~ "}\n";
 
-private immutable(char)[] fragment_shader_source =
+private enum fragment_shader_source =
     "precision mediump float;\n"
     ~ "uniform sampler2D u_texture;\n"
     ~ "varying vec2 v_tex_coord;\n"
