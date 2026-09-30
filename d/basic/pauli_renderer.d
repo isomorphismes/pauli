@@ -106,21 +106,21 @@ private extern(C) {
     void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 }
 
-private int current_width = 1;
-private int current_height = 1;
-private OrbitalState orbital_state;
+private __gshared int current_width = 1;
+private __gshared int current_height = 1;
+private __gshared OrbitalState orbital_state;
 
-private GLuint program = 0;
-private GLuint texture = 0;
-private GLuint vertex_buffer = 0;
+private __gshared GLuint program = 0;
+private __gshared GLuint texture = 0;
+private __gshared GLuint vertex_buffer = 0;
 
-private GLint position_location = -1;
-private GLint tex_coord_location = -1;
-private GLint screen_scale_location = -1;
-private GLint texture_location = -1;
+private __gshared GLint position_location = -1;
+private __gshared GLint tex_coord_location = -1;
+private __gshared GLint screen_scale_location = -1;
+private __gshared GLint texture_location = -1;
 
-private bool pixels_dirty = true;
-private ubyte[render_side * render_side * 3] pixels;
+private __gshared bool pixels_dirty = true;
+private __gshared ubyte[render_side * render_side * 3] pixels;
 
 private immutable GLfloat[24] quad_vertices = [
     -1.0f, -1.0f, 0.0f, 0.0f,
