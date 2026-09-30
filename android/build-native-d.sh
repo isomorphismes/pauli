@@ -155,6 +155,12 @@ grep -Fq 'ANativeActivity_onCreate' <<<"$symbols"
 grep -Fq 'android_main' <<<"$symbols"
 grep -Fq 'pauli_renderer_start' <<<"$symbols"
 
+dynamic=$("$readelf" -d "$output")
+if grep -Eiq 'phobos|druntime' <<<"$dynamic"; then
+    echo 'unexpected D runtime dependency in Android library' >&2
+    exit 1
+fi
+
 printf 'D native ABI            %s\n' "$abi"
 printf 'D native API floor      %s\n' "$api"
 printf 'D target triple         %s\n' "$ldc_triple"
