@@ -8,6 +8,7 @@ on:
     paths:
       - 'd/basic/**'
       - 'android/native/pauli_renderer_orbitals.c'
+      - 'android/build-native-d.sh'
       - '.github/workflows/d-basic-pauli.yml'
   workflow_dispatch:
 
@@ -16,9 +17,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install GDC
+
+      - name: Install D compilers
         run: |
           sudo apt-get update
-          sudo apt-get install -y gdc
+          sudo apt-get install -y gdc ldc
+
       - name: Check retained C against D translation
         run: sh ./d/basic/check.sh
+
+      - name: Compile BetterC D objects
+        run: |
+          mkdir -p build/d-basic
+          ldc2 -betterC -O3 -release -boundscheck=off -c             -I=d/basic             d/basic/pauli_orbitals.d             -of=build/d-basic/pauli_orbitals.o
+          ldc2 -betterC -O3 -release -boundscheck=off -c             -I=d/basic             d/basic/pauli_renderer.d             -of=build/d-basic/pauli_renderer.o
+          ldc2 -betterC -O3 -release -boundscheck=off -c             -I=d/basic             d/basic/pauli_android.d             -of=build/d-basic/pauli_android.o
+
+      - name: Build Android x86_64 BetterC library
+        env:
+          ANDROID_ABI: x86_64
+          ANDROID_API: '21'
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: |
+          bash ./android/build-native-d.sh             ./build/android/libpauli-d-x86_64.so
