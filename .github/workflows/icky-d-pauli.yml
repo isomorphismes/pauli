@@ -1,0 +1,186 @@
+name: Icky D Pauli
+
+on:
+  push:
+    branches:
+      - d/basic-pauli
+    paths:
+      - 'd/basic/**'
+      - '.github/workflows/icky-d-pauli.yml'
+  pull_request:
+    paths:
+      - 'd/basic/**'
+      - '.github/workflows/icky-d-pauli.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  icky-dmd:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out Pauli
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Check out pinned Icky DMD
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: dilapidated-shed/ick
+          ref: edeecb0ad920bd6aa29ee0c757e3d12f39e674e1
+          path: build/icky-dmd
+          persist-credentials: false
+
+      - name: Install Icky DMD build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl xz-utils clang lld
+          mkdir -p build/bootstrap
+          curl --fail --location --retry 3 \
+            https://github.com/dlang/dmd/releases/download/v2.113.0/dmd.2.113.0.linux.tar.xz \
+            -o build/bootstrap.tar.xz
+          echo 'b342ab8bd40cc0c46407692b31d7cd69661ff01da686234f426949e881727294  build/bootstrap.tar.xz' \
+            | sha256sum -c -
+          tar -xJf build/bootstrap.tar.xz -C build/bootstrap
+          echo "$GITHUB_WORKSPACE/build/bootstrap/dmd2/linux/bin64" >> "$GITHUB_PATH"
+
+      - name: Build owned Icky DMD
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd build/icky-dmd/dmd/compiler/src
+          dmd -run ./build.d dmd HOST_DMD="$(command -v dmd)"
+          dmd_bin=$(find ../../generated -type f -name dmd -perm -u+x -print -quit)
+          test -x "$dmd_bin"
+          "$dmd_bin" --version
+          printf '%s\n' "$(realpath "$dmd_bin")" > "$GITHUB_WORKSPACE/build/icky-dmd-bin.txt"
+
+      - name: Run Pauli receipts through Icky DMD
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dmd_bin=$(cat build/icky-dmd-bin.txt)
+          imports="$GITHUB_WORKSPACE/build/bootstrap/dmd2/src/druntime/import"
+          out="$GITHUB_WORKSPACE/build/pauli-icky-dmd"
+          mkdir -p "$out"
+
+          for source in pauli_leaf pauli_orbitals icky_check pauli_renderer pauli_android; do
+            "$dmd_bin" -betterC -release -c \
+              -I"$imports" -I"$GITHUB_WORKSPACE/d/basic" \
+              "$GITHUB_WORKSPACE/d/basic/$source.d" \
+              -of="$out/$source.o"
+          done
+
+          cc \
+            "$out/icky_check.o" \
+            "$out/pauli_leaf.o" \
+            "$out/pauli_orbitals.o" \
+            -lm \
+            -o "$out/pauli-icky-dmd-check"
+          "$out/pauli-icky-dmd-check"
+
+      - name: Compile production Pauli leaves with Icky DMD Android backends
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dmd_bin=$(cat build/icky-dmd-bin.txt)
+          imports="$GITHUB_WORKSPACE/build/bootstrap/dmd2/src/druntime/import"
+          out="$GITHUB_WORKSPACE/build/pauli-icky-dmd"
+
+          "$dmd_bin" \
+            -target=armv7a-linux-androideabi21 \
+            -betterC -c -I"$imports" \
+            "$GITHUB_WORKSPACE/d/basic/pauli_leaf.d" \
+            -of="$out/pauli_leaf-armv7.o"
+
+          "$dmd_bin" \
+            -target=aarch64-linux-android21 \
+            -betterC -c -I"$imports" \
+            "$GITHUB_WORKSPACE/d/basic/pauli_leaf.d" \
+            -of="$out/pauli_leaf-aarch64.o"
+
+          readelf -h "$out/pauli_leaf-armv7.o" | tee "$out/armv7.elf"
+          readelf -h "$out/pauli_leaf-aarch64.o" | tee "$out/aarch64.elf"
+          grep -Eq 'Class:[[:space:]]+ELF32' "$out/armv7.elf"
+          grep -Eq 'Machine:[[:space:]]+ARM' "$out/armv7.elf"
+          grep -Eq 'Class:[[:space:]]+ELF64' "$out/aarch64.elf"
+          grep -Eq 'Machine:[[:space:]]+AArch64' "$out/aarch64.elf"
+
+  icky-gdc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out Pauli
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Check out pinned Icky GDC
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: dilapidated-shed/ick
+          ref: af2049f9d07a7ba48c104d933a6fe90500f8e9c1
+          path: build/icky-gdc
+          persist-credentials: false
+          submodules: true
+
+      - name: Install Icky GDC build dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential gdc flex bison texinfo \
+            libgmp-dev libmpfr-dev libmpc-dev libisl-dev libzstd-dev
+
+      - name: Build owned Icky GDC
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd build/icky-gdc
+          sh ick/materialize.sh gcc source
+          mkdir build-gdc stage
+          cd build-gdc
+          ../source/configure \
+            --prefix="$GITHUB_WORKSPACE/build/icky-gdc/stage" \
+            --enable-languages=c,d \
+            --disable-bootstrap \
+            --disable-multilib \
+            --disable-nls \
+            --disable-shared \
+            --disable-libatomic \
+            --disable-libgomp \
+            --disable-libquadmath \
+            --disable-libssp \
+            --disable-libvtv
+          make -j"$(nproc)" all-gcc
+          make install-gcc
+
+      - name: Run Pauli receipts through Icky GDC
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gdc=$(find "$GITHUB_WORKSPACE/build/icky-gdc/stage/bin" -maxdepth 1 -type f \
+            \( -name gdc -o -name '*-gdc' \) | head -n 1)
+          test -x "$gdc"
+          "$gdc" --version
+
+          imports="$GITHUB_WORKSPACE/build/icky-gdc/source/libphobos/libdruntime"
+          out="$GITHUB_WORKSPACE/build/pauli-icky-gdc"
+          mkdir -p "$out"
+
+          for source in pauli_leaf pauli_orbitals icky_check pauli_renderer pauli_android; do
+            "$gdc" -fno-druntime -frelease -c \
+              -I"$imports" -I"$GITHUB_WORKSPACE/d/basic" \
+              "$GITHUB_WORKSPACE/d/basic/$source.d" \
+              -o "$out/$source.o"
+          done
+
+          cc \
+            "$out/icky_check.o" \
+            "$out/pauli_leaf.o" \
+            "$out/pauli_orbitals.o" \
+            -lm \
+            -o "$out/pauli-icky-gdc-check"
+          "$out/pauli-icky-gdc-check"
