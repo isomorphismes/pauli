@@ -1,6 +1,13 @@
 module pauli_orbitals;
 
 import core.stdc.math : cosf, expf, floorf, sinf, sqrtf;
+import pauli_leaf :
+    pauli_clamp_channel,
+    pauli_d_shape,
+    pauli_f_shape,
+    pauli_negative,
+    pauli_p_shape_squared,
+    pauli_radial_squared;
 
 public enum int render_side = 128;
 public enum int ray_steps = 28;
@@ -111,16 +118,16 @@ struct OrbitalState {
                 return expf(-2.0f * radius) / pi_value;
 
             case 1:
-                negative_phase = x < 0.0f;
-                return x * x * expf(-radius) / (32.0f * pi_value);
+                negative_phase = pauli_negative(x);
+                return pauli_p_shape_squared(x) * expf(-radius) / (32.0f * pi_value);
 
             case 2:
-                const shape = x * y;
+                const shape = pauli_d_shape(x, y);
                 negative_phase = shape < 0.0f;
                 return shape * shape * expf((-2.0f / 3.0f) * radius);
 
             default:
-                const shape = x * y * z;
+                const shape = pauli_f_shape(x, y, z);
                 negative_phase = shape < 0.0f;
                 return shape * shape * expf(-0.5f * radius);
         }
@@ -142,7 +149,7 @@ struct OrbitalState {
             (cast(float) pixel_y + 0.5f) /
             cast(float) render_side;
 
-        const radial_squared = u * u + v * v;
+        const radial_squared = pauli_radial_squared(u, v);
         if (radial_squared >= 1.0f) {
             output[0] = channel_to_byte(background_red);
             output[1] = channel_to_byte(background_green);
@@ -214,15 +221,6 @@ struct OrbitalState {
 }
 
 private ubyte channel_to_byte(float value) {
-    return cast(ubyte) floorf(255.0f * clamp_channel(value) + 0.5f);
+    return cast(ubyte) floorf(255.0f * pauli_clamp_channel(value) + 0.5f);
 }
 
-private float clamp_channel(float value) {
-    if (value < 0.0f) {
-        return 0.0f;
-    }
-    if (value > 1.0f) {
-        return 1.0f;
-    }
-    return value;
-}
