@@ -89,3 +89,11 @@ The first running renderer does not yet include:
 
 Those are additions to a running tracer now, rather than prerequisites for
 proving that the pipeline can be expressed and executed in Idriç.
+
+
+## Movie rendering
+
+Movie generation stays downstream of the renderer. Pauli-specific state,
+camera, and observable evolution are specified in
+[`notes/movie-rendering.md`](../notes/movie-rendering.md); the small
+`tools/movie.py` helper only turns ordered RGB24 stills into an MP4.
