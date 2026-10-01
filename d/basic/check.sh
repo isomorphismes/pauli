@@ -19,6 +19,7 @@ gdc -O2 \
     -I"$repo_root/d/basic" \
     "$repo_root/d/basic/check.d" \
     "$repo_root/d/basic/pauli_orbitals.d" \
+    "$repo_root/d/basic/pauli_leaf.d" \
     -o "$work/d-check"
 "$work/d-check"
 
