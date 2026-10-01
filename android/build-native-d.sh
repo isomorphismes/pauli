@@ -94,6 +94,10 @@ d_flags=(
 )
 
 "$ldc" "${d_flags[@]}" -c \
+    "$repo_root/d/basic/pauli_leaf.d" \
+    -of="$work/pauli_leaf.o"
+
+"$ldc" "${d_flags[@]}" -c \
     "$repo_root/d/basic/pauli_orbitals.d" \
     -of="$work/pauli_orbitals.o"
 
@@ -135,6 +139,7 @@ esac
 
 "$clang" \
     -shared \
+    "$work/pauli_leaf.o" \
     "$work/pauli_orbitals.o" \
     "$work/pauli_renderer.o" \
     "$work/pauli_android.o" \
