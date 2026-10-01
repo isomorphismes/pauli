@@ -62,3 +62,32 @@ checking D syntax.
 
 The D core retains the original default p state, p → d → f → s cycling,
 ±1.45 pitch clamp, 28 samples per ray, and the original rendering constants.
+
+
+## Icky D compiler lanes
+
+Pauli is now an Icky D consumer rather than treating LDC as the language
+authority.
+
+The CI workflow `.github/workflows/icky-d-pauli.yml` pins and exercises:
+
+- Icky DMD Android ARM backend commit
+  `edeecb0ad920bd6aa29ee0c757e3d12f39e674e1`;
+- Icky GDC baseline commit
+  `af2049f9d07a7ba48c104d933a6fe90500f8e9c1`.
+
+`pauli_leaf.d` is production orbital math factored specifically so the current
+Icky DMD Android leaf boundary can compile the same code used by the full
+renderer. It contains radial, p/d/f polynomial, sign, and channel-clamp
+operations. The renderer imports and calls those functions.
+
+Both owned Icky D compilers also compile the complete basic D source set on the
+host without druntime/Phobos. `icky_check.d` links the orbital core with the
+system C linker and libm and checks the same whole-image receipts.
+
+The remaining Icky D Android gap is therefore narrower than "compile D":
+the current DMD ARM/AArch64 leaf boundary does not yet admit the renderer's
+external math/GLES/EGL calls, aggregate state, byte RGB stores, global renderer
+state, or full NativeActivity shell. LDC remains a temporary Android object
+compiler for those pieces while that Icky D boundary is expanded. The Android
+NDK remains the final linker/ABI authority.
