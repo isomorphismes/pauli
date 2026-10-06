@@ -32,7 +32,8 @@ receipt_complex = ComplexField(200)
 
 
 def binary64_text(value):
-    return format(float(value), ".17g")
+    number = float(value)
+    return format(0.0 if number == 0.0 else number, ".17g")
 
 
 for energy_level, angular_degree, axis_component in spdf_states():
@@ -59,6 +60,12 @@ for energy_level, angular_degree, axis_component in spdf_states():
 
         real_value = float(value.real())
         imaginary_value = float(value.imag())
+        # CAS evaluation can preserve either sign of an exact imaginary
+        # zero. Canonicalize it before atan2 as well as in serialized fields.
+        if imaginary_value == 0.0:
+            imaginary_value = 0.0
+        if real_value == 0.0:
+            real_value = 0.0
 
         print(
             energy_level,

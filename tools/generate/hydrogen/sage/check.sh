@@ -35,7 +35,7 @@ run_sage_python() {
         docker run --rm \
             -v "$repo_root:/work:ro" \
             -w /work \
-            sagemath/sagemath:10.8 \
+            sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python "$script_path" "$@"
         return
     fi
@@ -44,7 +44,7 @@ run_sage_python() {
         podman run --rm \
             -v "$repo_root:/work:ro" \
             -w /work \
-            docker.io/sagemath/sagemath:10.8 \
+            docker.io/sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python "$script_path" "$@"
         return
     fi
