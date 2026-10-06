@@ -68,6 +68,9 @@ run_sage_python "$sage_directory/export_polar_f64.py" \
 run_sage_python "$sage_directory/export_polar_f64_receipts.py" \
     > "$temporary_directory/polar_f64_receipts.tsv"
 
+run_sage_python "$sage_directory/export_viewer_receipts.py" \
+    > "$temporary_directory/viewer_receipts.tsv"
+
 if grep -Eq \
     '(hypot|atan2|\.real|\.imaginary)' \
     "$temporary_directory/hydrogen_spdf_f64.h"
@@ -102,6 +105,17 @@ cc \
 
 "$temporary_directory/check_polar_f64_runtime" \
     "$temporary_directory/polar_f64_receipts.tsv"
+
+cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
+    -I "$temporary_directory" -I android/native \
+    android/native/check_hydrogen_renderer.c \
+    android/native/pauli_orbital.c android/native/pauli_volume_image.c \
+    android/native/pauli_color.c android/native/pauli_renderer_orbitals.c \
+    -lm -o "$temporary_directory/check_hydrogen_renderer"
+
+"$temporary_directory/check_hydrogen_renderer" \
+    "$temporary_directory/polar_f64_receipts.tsv" \
+    "$temporary_directory/viewer_receipts.tsv"
 
 printf \
     '%bPASS%b: hydrogen derivation, public artifacts, and polar runtime checks complete.\n' \

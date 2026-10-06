@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "tools/generate/hydrogen/**"
+      - ".github/actions/hydrogen-f64/**"
       - ".github/workflows/android-phone-apk.yml"
   push:
     branches:
       - main
     paths:
       - "android/**"
+      - "tools/generate/hydrogen/**"
+      - ".github/actions/hydrogen-f64/**"
       - ".github/workflows/android-phone-apk.yml"
   workflow_dispatch:
 
@@ -19,6 +23,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate checked native hydrogen input
+        uses: ./.github/actions/hydrogen-f64
 
       - name: Check out stable public test signer
         uses: actions/checkout@v4

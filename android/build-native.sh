@@ -9,7 +9,13 @@ if (($# > 0)); then
 fi
 
 renderer_sources=("$@")
+generated_directory=${PAULI_GENERATED_DIRECTORY:-"$repo_root/build/generated"}
 if ((${#renderer_sources[@]} == 0)); then
+    [[ -s "$generated_directory/hydrogen_spdf_f64.h" ]] || {
+        echo 'missing checked hydrogen build input; run the declared hydrogen-f64 generation stage' >&2
+        exit 1
+    }
+    (cd "$repo_root" && sha256sum --check "$generated_directory/sources.sha256")
     renderer_sources=(
         "$repo_root/android/native/pauli_renderer_orbitals.c"
         "$repo_root/android/native/pauli_orbital.c"
@@ -98,6 +104,7 @@ esac
     -Wextra \
     -I "$glue_dir" \
     -I "$repo_root/android/native" \
+    -I "$generated_directory" \
     "$repo_root/android/native/pauli_android.c" \
     "$glue_source" \
     "${renderer_sources[@]}" \

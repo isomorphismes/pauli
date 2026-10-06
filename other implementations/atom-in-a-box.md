@@ -14,6 +14,25 @@ Version 2 computes the eigenstates at run time, supports all 2109 eigenstates th
 
 ## Source status
 
+## Pauli comparison after the checked-state renderer integration
+
+Now implemented in the native viewer:
+
+- checked hydrogen states drive the actual CPU volume renderer;
+- explicit (n, ℓ, m, basis) values and documented real-basis transforms;
+- bounded four-state selection, drag rotation and event-driven rendering;
+- magnitude/phase amplitudes with density = magnitude²;
+- GLES image presentation and a native-only APK.
+
+Color currently projects phase to the existing two sign colors. Magnitude/phase
+storage supports complex phase, but continuous phase coloring is not implemented.
+
+Still future: a broader catalogue potentially toward n = 18, an arbitrary
+state picker, continuous complex-phase coloring, superpositions, time
+evolution, render-quality controls, and remaining Atom in a Box parity work.
+
+## Source availability
+
 No public source release was located in the September 2026 search. Older releases were distributed as shareware applications; version 2 was rewritten in SwiftUI and is commercially distributed.
 
 The official documentation does, however, describe enough of the rendering algorithm to make an independent implementation possible.

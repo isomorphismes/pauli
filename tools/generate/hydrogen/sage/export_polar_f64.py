@@ -168,6 +168,9 @@ def render_function(
     double polar_angle,
     double azimuth
 ) {{
+    (void)radius;
+    (void)polar_angle;
+    (void)azimuth;
     const double signed_amplitude =
         {c_expression(signed_amplitude)};
 
