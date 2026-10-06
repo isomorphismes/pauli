@@ -14,9 +14,9 @@ runs:
         output = root / "build/generated"
         output.mkdir(parents=True, exist_ok=True)
         source = "tools/generate/hydrogen/sage"
-        image = "sagemath/sagemath:10.8"
+        image = "sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea"
         subprocess.run(["docker", "pull", image], check=True)
-        docker = ["docker", "run", "--rm", "-v", f"{root}:/work:ro",
+        docker = ["docker", "run", "--rm", "-e", "PYTHONHASHSEED=0", "-v", f"{root}:/work:ro",
                   "-w", "/work", image, "sage", "-python"]
         for script, name in [
             ("export_polar_f64.py", "hydrogen_spdf_f64.h"),
@@ -26,6 +26,9 @@ runs:
             first = subprocess.check_output(docker + [f"{source}/{script}"])
             second = subprocess.check_output(docker + [f"{source}/{script}"])
             if first != second:
+                import difflib
+                print("".join(difflib.unified_diff(first.decode().splitlines(True),
+                    second.decode().splitlines(True), fromfile="first", tofile="second")))
                 raise RuntimeError(f"non-deterministic generation: {script}")
             (output / name).write_bytes(first)
         header = (output / "hydrogen_spdf_f64.h").read_text()

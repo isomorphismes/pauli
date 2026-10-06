@@ -32,16 +32,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Pull Sage image
-        run: docker pull sagemath/sagemath:10.8
+        run: docker pull sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea
 
       - name: Exact state checks
         run: |
           docker run --rm \
             -v "$PWD:/work" \
             -w /work \
-            sagemath/sagemath:10.8 \
+            sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python tools/generate/hydrogen/sage/check_hydrogen_states.py
 
       - name: Independent SymPy checks
@@ -49,7 +51,7 @@ jobs:
           docker run --rm \
             -v "$PWD:/work" \
             -w /work \
-            sagemath/sagemath:10.8 \
+            sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python tools/generate/hydrogen/sage/check_with_sympy.py
 
       - name: Verify generated public HTML
@@ -57,7 +59,7 @@ jobs:
           docker run --rm \
             -v "$PWD:/work:ro" \
             -w /work \
-            sagemath/sagemath:10.8 \
+            sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python tools/generate/hydrogen/sage/update_public.py --check
 
       - name: Execute notebook code cells
@@ -65,7 +67,7 @@ jobs:
           docker run --rm \
             -v "$PWD:/work:ro" \
             -w /work \
-            sagemath/sagemath:10.8 \
+            sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python tools/generate/hydrogen/sage/check_notebook.py
 
       - name: Generate and check application hydrogen input

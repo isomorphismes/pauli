@@ -41,7 +41,7 @@ a CI fallback.
 
 ## Current status
 
-The Android shell and the first orbital renderer are connected. The default native build renders a 2p_x hydrogen state immediately, rotates it on drag, and cycles representative s, p, d, and f states on tap. The renderer uses a bounded 128 × 128 Float32 CPU volume pass and uploads the packed RGB frame through GLES, keeping Android lifecycle/input code separate behind `pauli_renderer.h`.
+The Android shell and the checked hydrogen renderer are connected. The default native build renders a 2pₓ real-basis hydrogen state immediately, rotates sample coordinates on drag, and cycles four representative s, p, d, and f states on tap. The field amplitude and density use the generated F64 evaluator; the bounded 128 × 128 CPU volume pass retains Float32 coordinates and color accumulation. GLES uploads the packed RGB frame, keeping Android lifecycle/input code separate behind `pauli_renderer.h`. See [the renderer call-map and build-input contract](native/README.md) for quantum numbers, real-basis definitions and numerical checks.
 
 `pauli_renderer_smoke.c` remains available as a packaging/input probe, but it is no longer the default application renderer.
 

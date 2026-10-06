@@ -2,7 +2,7 @@
 from math import acos, atan2, hypot
 
 import sympy as sp
-from sage.all import CDF
+from sage.all import CDF, I, sqrt
 from hydrogen_states import bound_state, radius, polar_angle, azimuth
 
 sample_points = [
@@ -52,9 +52,9 @@ for index, (n, degree, component, basis) in enumerate(states):
     if basis == 0:
         sage_state = sage_positive
     elif basis == 1:
-        sage_state = (sage_negative + (-1)**component * sage_positive) / sp.sqrt(2)._sage_()
+        sage_state = (sage_negative + (-1)**component * sage_positive) / sqrt(2)
     else:
-        sage_state = (sage_negative - (-1)**component * sage_positive) * sp.I._sage_() / sp.sqrt(2)._sage_()
+        sage_state = (sage_negative - (-1)**component * sage_positive) * I / sqrt(2)
     for point in sample_points:
         sample_radius = hypot(hypot(point[0], point[1]), point[2])
         sample_theta = acos(point[2]/sample_radius) if sample_radius else 0.0

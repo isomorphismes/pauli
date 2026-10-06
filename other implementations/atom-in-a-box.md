@@ -12,8 +12,6 @@ This is therefore a genuine volume-rendering approach rather than an isosurface 
 
 Version 2 computes the eigenstates at run time, supports all 2109 eigenstates through `n = 18`, and supports superpositions of up to eight eigenstates.
 
-## Source status
-
 ## Pauli comparison after the checked-state renderer integration
 
 Now implemented in the native viewer:

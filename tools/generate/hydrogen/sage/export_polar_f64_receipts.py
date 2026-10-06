@@ -4,7 +4,7 @@ from math import atan2
 from pathlib import Path
 import sys
 
-from sage.all import CDF, QQ
+from sage.all import ComplexField, QQ
 
 sys.path.insert(
     0,
@@ -25,6 +25,11 @@ sample_points = [
     (QQ(19) / 6, QQ(11) / 5, QQ(13) / 5),
 ]
 
+# Evaluate the symbolic expression above binary64 precision and round only
+# the receipt fields. Direct CDF conversion rounded intermediate operations
+# and depended on fresh-process symbolic evaluation order.
+receipt_complex = ComplexField(200)
+
 
 def binary64_text(value):
     return format(float(value), ".17g")
@@ -42,7 +47,7 @@ for energy_level, angular_degree, axis_component in spdf_states():
         sample_polar_angle,
         sample_azimuth,
     ) in sample_points:
-        value = CDF(
+        value = receipt_complex(
             expression.subs(
                 {
                     radius: sample_radius,

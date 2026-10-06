@@ -84,6 +84,8 @@ static void check_invalid(void) {
     REQUIRE(isnan(pauli_orbital_sample_at(valid, NAN,2,3).density));
     REQUIRE(isnan(pauli_orbital_sample_at(valid, 1,INFINITY,3).density));
     REQUIRE(isnan(pauli_hydrogen_spdf_f64(5,0,0,1,1,1).magnitude));
+    REQUIRE(isnan(pauli_hydrogen_spdf_f64(2,2,0,1,1,1).magnitude));
+    REQUIRE(isnan(pauli_hydrogen_spdf_f64(2,1,-2,1,1,1).magnitude));
 }
 
 enum { IMAGE_BYTES = PAULI_VOLUME_IMAGE_SIDE*PAULI_VOLUME_IMAGE_SIDE*3 };
