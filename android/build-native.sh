@@ -85,6 +85,13 @@ done
 
 mkdir -p "$(dirname -- "$output")"
 
+# NDK-owned glue retains unused callback parameters. Keep that allowance
+# separate from Pauli's sources, which compile with warnings as errors.
+glue_object="${output%.so}.native-app-glue.o"
+"$clang" -std=c11 -O2 -fPIC -Wall -Wextra -Werror \
+    -Wno-unused-parameter -I "$glue_dir" \
+    -c "$glue_source" -o "$glue_object"
+
 link_alignment=()
 case "$abi" in
     arm64-v8a|x86_64)
@@ -102,11 +109,12 @@ esac
     -shared \
     -Wall \
     -Wextra \
+    -Werror \
     -I "$glue_dir" \
     -I "$repo_root/android/native" \
     -I "$generated_directory" \
     "$repo_root/android/native/pauli_android.c" \
-    "$glue_source" \
+    "$glue_object" \
     "${renderer_sources[@]}" \
     -Wl,--no-undefined \
     -Wl,-soname,libpauli.so \

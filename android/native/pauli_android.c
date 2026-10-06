@@ -311,7 +311,6 @@ static int32_t pauli_handle_input(
 }
 
 void android_main(struct android_app *app) {
-    app_dummy();
     PAULI_LOG("native entry");
 
     struct pauli_android_state state;
