@@ -127,6 +127,9 @@ jobs:
           apk: build/android/pauli-x86_64.apk
           lane: test
 
+      - name: Enable hosted emulator KVM access
+        run: sudo chmod a+rw /dev/kvm
+
       - name: Exercise DEX-free native viewer shell on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -136,6 +139,7 @@ jobs:
           profile: medium_phone
           ram-size: 2048M
           disable-animations: true
+          disable-linux-hw-accel: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -no-metrics
           script: sh android/emulator-smoke.sh
 
