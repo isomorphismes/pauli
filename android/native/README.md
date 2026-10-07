@@ -6,12 +6,15 @@ The native viewer is split by purpose.
 
 1. `pauli_renderer_orbitals.c`
    - coordinates the viewer;
-   - remembers the selected orbital and rotation;
+   - remembers a demonstration position and rotation;
+   - passes the catalogue's explicit hydrogen state to volume rendering;
    - responds to start, drag, tap, draw, and stop.
 
 2. `pauli_orbital.c`
-   - contains the current orbital formulas;
-   - given an orbital and a point, returns density and phase sign;
+   - validates `energy_level` n, `angular_degree` ℓ, `axis_component` m and basis;
+   - calls the generated `pauli_hydrogen_spdf_f64` at spherical coordinates;
+   - applies the documented real-basis transform, returning magnitude/phase,
+     density = magnitude², and a phase-sign projection for the present colors;
    - contains no Android, GLES, pixel, or color code.
 
 3. `pauli_color.c`
@@ -39,15 +42,19 @@ NativeActivity/EGL/input lifecycle and talks to the renderer only through
 ## Main call path
 
 ```text
-Android touch or draw
+selected catalogue state (n, ℓ, m, basis)
         ↓
-pauli_renderer_orbitals.c
+pauli_volume_image.c: rotate sample coordinates only
         ↓
-pauli_volume_image.c
+pauli_orbital.c: Cartesian → spherical coordinates
         ↓
-pauli_orbital.c
+build/generated/hydrogen_spdf_f64.h: checked amplitude
         ↓
-pauli_color.c
+pauli_orbital.c: explicit basis transform → magnitude/phase → density
+        ↓
+pauli_volume_image.c: 28 bounded ray samples
+        ↓
+pauli_color.c: phase-sign color, integration gain, tone mapping
         ↓
 RGB pixels
         ↓
@@ -56,6 +63,65 @@ pauli_gles_image.c
 screen
 ```
 
-The split is intended to make each part independently criticizable. It does
-not claim that the present orbital formulas, render profiles, colors, or
-volume algorithm are the final design.
+Android owns lifecycle/input through `pauli_renderer.h`; it knows no hydrogen
+formulas. GLES owns presentation and compiles its image shader only at start.
+The generated evaluator knows no cameras, pixels, Android or GLES.
+
+## State and real-basis convention
+
+Use atomic units (Bohr radius = 1) and the checked Condon–Shortley convention
+ψ₋ₘ = (−1)ᵐ conjugate(ψₘ). A spherical state stores signed m. For a real
+state, positive m labels the fixed ±m pair, not a single axis eigenvalue:
+
+| Demo | (n, ℓ, m, basis) | Exact checked-basis combination |
+| --- | --- | --- |
+| 1s | (1, 0, 0, spherical) | ψ₀ |
+| 2pₓ | (2, 1, 1, cosine) | (ψ₋₁ − ψ₁)/√2 |
+| 3dₓᵧ | (3, 2, 2, sine) | i(ψ₋₂ − ψ₂)/√2 |
+| 4fₓᵧ𝓏 | (4, 3, 2, sine) | i(ψ₋₂ − ψ₂)/√2 |
+
+In general cosine = √2(−1)ᵐ Re(ψₘ) and sine = √2(−1)ᵐ Im(ψₘ).
+Runtime projects directly from polar storage. These are fixed basis changes;
+no arbitrary superposition UI or editable coefficient model is introduced.
+Zero phase is canonical at a zero amplitude. Node roundoff is compared with
+an absolute tolerance, without treating undefined node phase as evidence.
+
+The four-state catalogue is UI iteration only. Validation admits exactly the
+generated n ≤ 4 domain and rejects invalid quantum numbers, unknown basis
+tags, nonpositive real-pair m, and nonfinite coordinates. Invalid samples
+contain NaNs and contribute no light. A state outside the demonstration
+catalogue has no display profile and produces background.
+
+Rotation evaluates the same const state at rotated coordinates; it never
+changes coefficients, regenerates expressions, or allocates state data.
+The first state remains 2pₓ, followed by 3dₓᵧ, 4fₓᵧ𝓏, 1s on taps.
+
+The old s/p densities were normalized. The old d/f densities omitted factors
+2/(6561π) and 1/(786432π). Those handwritten formulas are removed. Display
+gain absorbs the inverse factors, preserving brightness and lobe shapes
+while density now has the checked physical normalization.
+
+## Generated build boundary and checks
+
+`.github/actions/hydrogen-f64` explicitly generates the header and numeric
+receipts with SageMath 10.8 before native compilation. It repeats generation
+and demands byte equality. Generated source is a build output, not committed
+or silently regenerated during APK packaging. The native build requires the
+header and verifies the generator-source digest manifest; stale/missing
+inputs fail closed. `PAULI_GENERATED_DIRECTORY` can select an already generated
+absolute directory. A custom smoke renderer does not require hydrogen data.
+
+The APK contains compiled F64 native code only. Sage, SymPy, Python, receipt
+files and host checks remain on the build host. The generated header bounds
+the evaluator to 30 checked states; the viewer exposes only four.
+
+The generation action checks the generated evaluator's 90 Sage receipts and
+compiles the real application adapter, volume renderer, color code and event
+coordinator with warnings as errors. `export_viewer_receipts.py` independently
+checks the real-basis identities with SymPy and checks Sage/SymPy values at
+deterministic Cartesian points, including negative lobes. The application
+check covers 40 viewer receipts, origin/axes, invalid inputs, visible images
+for every demo, const-state rotation, reproducibility, immediate first image,
+tap wrapping and uploads only after interaction. Its GLES presentation stub
+is host evidence; actual GLES/package/lifecycle evidence comes separately
+from the Android workflow and physical acceptance.

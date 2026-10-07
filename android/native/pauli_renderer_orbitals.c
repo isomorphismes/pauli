@@ -15,8 +15,8 @@
  * OpenGL ES presentation lives in pauli_gles_image.c.
  */
 
-static enum pauli_orbital current_orbital =
-    PAULI_ORBITAL_2P_X;
+/* Catalogue position is UI bookkeeping, never a mathematical state. */
+static size_t current_demo = 1;
 
 static float yaw = 0.0f;
 static float pitch = 0.0f;
@@ -31,7 +31,7 @@ static uint8_t pixels[
 
 static void render_current_orbital(void) {
     pauli_volume_render_image(
-        current_orbital,
+        &pauli_orbital_demo_at(current_demo)->state,
         yaw,
         pitch,
         pixels
@@ -55,7 +55,7 @@ int pauli_renderer_start(
     }
 
     pauli_volume_render_image(
-        current_orbital,
+        &pauli_orbital_demo_at(current_demo)->state,
         yaw,
         pitch,
         pixels
@@ -103,10 +103,7 @@ void pauli_renderer_drag(
 }
 
 void pauli_renderer_cycle_orbital(void) {
-    current_orbital =
-        pauli_orbital_next(
-            current_orbital
-        );
+    current_demo = (current_demo + 1) % pauli_orbital_demo_count();
 
     pixels_dirty = 1;
 }

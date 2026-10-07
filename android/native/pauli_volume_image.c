@@ -13,66 +13,88 @@ struct pauli_render_profile {
     float gain;
 };
 
+struct pauli_view_rotation {
+    float cos_yaw;
+    float sin_yaw;
+    float cos_pitch;
+    float sin_pitch;
+};
+
 static struct pauli_render_profile render_profile_for(
-    enum pauli_orbital orbital
+    const struct pauli_hydrogen_state *state
 ) {
-    switch (orbital) {
-        case PAULI_ORBITAL_1S:
+    switch (pauli_orbital_demo_index(state)) {
+        case 0:
             return (struct pauli_render_profile) {
                 .physical_radius = 6.0f,
                 .gain = 35.0f
             };
 
-        case PAULI_ORBITAL_2P_X:
+        case 1:
             return (struct pauli_render_profile) {
                 .physical_radius = 8.0f,
                 .gain = 90.0f
             };
 
-        case PAULI_ORBITAL_3D_XY:
+        case 2:
             return (struct pauli_render_profile) {
                 .physical_radius = 18.0f,
-                .gain = 0.06f
+                /* Compensate the old omitted normalization in display gain. */
+                .gain = 0.06f * (6561.0f * (float)PAULI_PI / 2.0f)
             };
 
-        case PAULI_ORBITAL_4F_XYZ:
-        default:
+        case 3:
             return (struct pauli_render_profile) {
                 .physical_radius = 30.0f,
-                .gain = 0.00045f
+                .gain = 0.00045f * (786432.0f * (float)PAULI_PI)
             };
+        default:
+            return (struct pauli_render_profile){0.0f, 0.0f};
     }
+}
+
+static struct pauli_view_rotation view_rotation_for(
+    float yaw,
+    float pitch
+) {
+    return (struct pauli_view_rotation) {
+        .cos_yaw = cosf(yaw),
+        .sin_yaw = sinf(yaw),
+        .cos_pitch = cosf(pitch),
+        .sin_pitch = sinf(pitch)
+    };
 }
 
 static void rotate_into_orbital(
     float x,
     float y,
     float z,
-    float yaw,
-    float pitch,
+    const struct pauli_view_rotation *rotation,
     float *orbital_x,
     float *orbital_y,
     float *orbital_z
 ) {
-    const float cos_yaw = cosf(yaw);
-    const float sin_yaw = sinf(yaw);
-    const float cos_pitch = cosf(pitch);
-    const float sin_pitch = sinf(pitch);
-
-    const float yaw_x = cos_yaw * x + sin_yaw * z;
-    const float yaw_z = -sin_yaw * x + cos_yaw * z;
+    const float yaw_x =
+        rotation->cos_yaw * x +
+        rotation->sin_yaw * z;
+    const float yaw_z =
+        -rotation->sin_yaw * x +
+        rotation->cos_yaw * z;
 
     *orbital_x = yaw_x;
-    *orbital_y = cos_pitch * y - sin_pitch * yaw_z;
-    *orbital_z = sin_pitch * y + cos_pitch * yaw_z;
+    *orbital_y =
+        rotation->cos_pitch * y -
+        rotation->sin_pitch * yaw_z;
+    *orbital_z =
+        rotation->sin_pitch * y +
+        rotation->cos_pitch * yaw_z;
 }
 
 static struct pauli_rgb integrate_ray(
-    enum pauli_orbital orbital,
+    const struct pauli_hydrogen_state *state,
     float u,
     float v,
-    float yaw,
-    float pitch,
+    const struct pauli_view_rotation *rotation,
     struct pauli_render_profile profile
 ) {
     const float radial_squared = u * u + v * v;
@@ -104,8 +126,7 @@ static struct pauli_rgb integrate_ray(
             u,
             v,
             ray_z,
-            yaw,
-            pitch,
+            rotation,
             &orbital_x,
             &orbital_y,
             &orbital_z
@@ -113,7 +134,7 @@ static struct pauli_rgb integrate_ray(
 
         const struct pauli_orbital_sample sample =
             pauli_orbital_sample_at(
-                orbital,
+                state,
                 profile.physical_radius * orbital_x,
                 profile.physical_radius * orbital_y,
                 profile.physical_radius * orbital_z
@@ -122,7 +143,8 @@ static struct pauli_rgb integrate_ray(
         const struct pauli_rgb emitted =
             pauli_color_scale(
                 pauli_phase_color(sample.negative_phase),
-                sample.density * physical_step
+                isfinite(sample.density)
+                    ? (float)(sample.density * physical_step) : 0.0f
             );
 
         accumulated =
@@ -133,11 +155,10 @@ static struct pauli_rgb integrate_ray(
 }
 
 static void render_pixel(
-    enum pauli_orbital orbital,
+    const struct pauli_hydrogen_state *state,
     int pixel_x,
     int pixel_y,
-    float yaw,
-    float pitch,
+    const struct pauli_view_rotation *rotation,
     struct pauli_render_profile profile,
     uint8_t output[3]
 ) {
@@ -165,11 +186,10 @@ static void render_pixel(
 
     const struct pauli_rgb accumulated =
         integrate_ray(
-            orbital,
+            state,
             u,
             v,
-            yaw,
-            pitch,
+            rotation,
             profile
         );
 
@@ -183,22 +203,23 @@ static void render_pixel(
 }
 
 void pauli_volume_render_image(
-    enum pauli_orbital orbital,
+    const struct pauli_hydrogen_state *state,
     float yaw,
     float pitch,
     uint8_t *pixels
 ) {
     const struct pauli_render_profile profile =
-        render_profile_for(orbital);
+        render_profile_for(state);
+    const struct pauli_view_rotation rotation =
+        view_rotation_for(yaw, pitch);
 
     for (int y = 0; y < PAULI_VOLUME_IMAGE_SIDE; ++y) {
         for (int x = 0; x < PAULI_VOLUME_IMAGE_SIDE; ++x) {
             render_pixel(
-                orbital,
+                state,
                 x,
                 y,
-                yaw,
-                pitch,
+                &rotation,
                 profile,
                 &pixels[
                     3 *

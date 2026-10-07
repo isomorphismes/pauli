@@ -159,7 +159,9 @@ apk_sha256=$(sha256sum "$output" | awk '{print $1}')
     printf 'signer_cert_sha256\t%s\n' "$apk_cert_sha256"
     printf 'expected_signer_cert_sha256\t%s\n' "$expected_cert_sha256"
     printf 'key_alias\t%s\n' "$key_alias"
-    printf 'source_commit\t%s\n' "${GITHUB_SHA:-local}"
+    # The PR event SHA may be a synthetic merge ref even when the build
+    # explicitly checked out its head. Bind the receipt to actual source.
+    printf 'source_commit\t%s\n' "$(git -C "$repo_root" rev-parse HEAD)"
 } > "$receipt"
 
 printf 'APK ABI                 %s\n' "$abi"

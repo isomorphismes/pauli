@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "android/**"
+      - "tools/generate/hydrogen/**"
+      - ".github/actions/hydrogen-f64/**"
       - ".github/workflows/android-shell.yml"
   push:
     branches:
       - main
     paths:
       - "android/**"
+      - "tools/generate/hydrogen/**"
+      - ".github/actions/hydrogen-f64/**"
       - ".github/workflows/android-shell.yml"
 
 jobs:
@@ -18,12 +22,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Generate checked native hydrogen input
+        uses: ./.github/actions/hydrogen-f64
 
       - name: Check shell syntax
         run: |
           bash -n android/build-native.sh
           bash -n android/build-apk.sh
           bash -n android/build.sh
+          sh -n android/emulator-smoke.sh
 
       - uses: android-actions/setup-android@v3
         with:

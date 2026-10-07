@@ -35,7 +35,7 @@ run_sage_python() {
         docker run --rm \
             -v "$repo_root:/work:ro" \
             -w /work \
-            sagemath/sagemath:10.8 \
+            sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python "$script_path" "$@"
         return
     fi
@@ -44,7 +44,7 @@ run_sage_python() {
         podman run --rm \
             -v "$repo_root:/work:ro" \
             -w /work \
-            docker.io/sagemath/sagemath:10.8 \
+            docker.io/sagemath/sagemath:10.8@sha256:e2e4747b0e1ea8753a9cb5a399314a8b2c25fcefaf69ba85b22ee075829d09ea \
             sage -python "$script_path" "$@"
         return
     fi
@@ -67,6 +67,9 @@ run_sage_python "$sage_directory/export_polar_f64.py" \
 
 run_sage_python "$sage_directory/export_polar_f64_receipts.py" \
     > "$temporary_directory/polar_f64_receipts.tsv"
+
+run_sage_python "$sage_directory/export_viewer_receipts.py" \
+    > "$temporary_directory/viewer_receipts.tsv"
 
 if grep -Eq \
     '(hypot|atan2|\.real|\.imaginary)' \
@@ -102,6 +105,17 @@ cc \
 
 "$temporary_directory/check_polar_f64_runtime" \
     "$temporary_directory/polar_f64_receipts.tsv"
+
+cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
+    -I "$temporary_directory" -I android/native \
+    android/native/check_hydrogen_renderer.c \
+    android/native/pauli_orbital.c android/native/pauli_volume_image.c \
+    android/native/pauli_color.c android/native/pauli_renderer_orbitals.c \
+    -lm -o "$temporary_directory/check_hydrogen_renderer"
+
+"$temporary_directory/check_hydrogen_renderer" \
+    "$temporary_directory/polar_f64_receipts.tsv" \
+    "$temporary_directory/viewer_receipts.tsv"
 
 printf \
     '%bPASS%b: hydrogen derivation, public artifacts, and polar runtime checks complete.\n' \

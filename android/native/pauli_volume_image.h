@@ -10,7 +10,7 @@ enum {
 };
 
 void pauli_volume_render_image(
-    enum pauli_orbital orbital,
+    const struct pauli_hydrogen_state *state,
     float yaw,
     float pitch,
     uint8_t *pixels
