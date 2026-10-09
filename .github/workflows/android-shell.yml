@@ -2,28 +2,39 @@ name: Android native shell
 
 on:
   pull_request:
-    paths:
-      - "android/**"
-      - "tools/generate/hydrogen/**"
-      - ".github/actions/hydrogen-f64/**"
-      - ".github/workflows/android-shell.yml"
   push:
-    branches:
-      - main
-    paths:
-      - "android/**"
-      - "tools/generate/hydrogen/**"
-      - ".github/actions/hydrogen-f64/**"
-      - ".github/workflows/android-shell.yml"
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
+  compilers:
+    uses: ./.github/workflows/ick-compilers.yml
+
   native-smoke:
+    needs: compilers
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Check out the qualified stage interface
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: isomorphisms/ai-ci
+          ref: 903b2cb27ea572c9c6cb2ffa9f39e0fbf06ec9f8
+          path: .ai-ci-ick
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: pauli-ick-*
+          path: .ick-toolchains
+          merge-multiple: true
+      - name: Restore the three installed C frontends
+        run: make -f scripts/ick-toolchains.mk restore
 
       - name: Generate checked native hydrogen input
         uses: ./.github/actions/hydrogen-f64
@@ -35,7 +46,7 @@ jobs:
           bash -n android/build.sh
           sh -n android/emulator-smoke.sh
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
         with:
           packages: platform-tools
 
@@ -49,11 +60,11 @@ jobs:
           set -eu
 
           for abi in armeabi-v7a arm64-v8a x86_64; do
-            ANDROID_ABI="$abi"               bash android/build-native.sh               "build/android/$abi/libpauli.so"
+            ICK_ROOT="$PWD/build/ick/$abi" ANDROID_ABI="$abi"               bash android/build-native.sh               "build/android/$abi/libpauli.so"
           done
 
       - name: Retain native smoke libraries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pauli-native-smoke
           path: build/android/*/libpauli.so

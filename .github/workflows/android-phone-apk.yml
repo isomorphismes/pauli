@@ -2,35 +2,46 @@ name: Android phone APK
 
 on:
   pull_request:
-    paths:
-      - "android/**"
-      - "tools/generate/hydrogen/**"
-      - ".github/actions/hydrogen-f64/**"
-      - ".github/workflows/android-phone-apk.yml"
   push:
-    branches:
-      - main
-    paths:
-      - "android/**"
-      - "tools/generate/hydrogen/**"
-      - ".github/actions/hydrogen-f64/**"
-      - ".github/workflows/android-phone-apk.yml"
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
+  compilers:
+    uses: ./.github/workflows/ick-compilers.yml
+
   phone-apk:
+    needs: compilers
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Check out the qualified stage interface
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: isomorphisms/ai-ci
+          ref: 903b2cb27ea572c9c6cb2ffa9f39e0fbf06ec9f8
+          path: .ai-ci-ick
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: pauli-ick-*
+          path: .ick-toolchains
+          merge-multiple: true
+      - name: Restore the three installed C frontends
+        run: make -f scripts/ick-toolchains.mk restore
 
       - name: Generate checked native hydrogen input
         uses: ./.github/actions/hydrogen-f64
 
       - name: Check out stable public test signer
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: isomorphismes/wegert
           ref: 89dcfb840cec1a66ee04c7f7404954cbd6c09839
@@ -39,7 +50,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Check out central signing policy
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: isomorphisms/ai-ci
           ref: f0cc1a0473422aa5562911beb8a30baa2f6cb49c
@@ -64,12 +75,12 @@ jobs:
           }
           printf 'PAULI_EXPECTED_CERT_SHA256=%s\n' "$signer" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
         with:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
         with:
           packages: platform-tools
 
@@ -86,6 +97,7 @@ jobs:
           ANDROID_BUILD_TOOLS: ${{ env.ANDROID_HOME }}/build-tools/36.0.0
           ANDROID_COMPILE_SDK: "36"
           ANDROID_ABI: armeabi-v7a
+          ICK_ROOT: ${{ github.workspace }}/build/ick/armeabi-v7a
           PAULI_KEYSTORE: ${{ github.workspace }}/.test-signing/_/build/app/wegert-debug.keystore
           PAULI_KEYSTORE_TYPE: PKCS12
           PAULI_KEY_ALIAS: wegert-debug
@@ -150,7 +162,7 @@ jobs:
           lane: test
 
       - name: Retain MIRO APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pauli-miro-orbital-apk
           path: |
