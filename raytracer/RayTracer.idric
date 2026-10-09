@@ -73,7 +73,7 @@ normalize_direction direction =
   let length = direction_length direction
   in if length ≟ 0.0
        then direction
-       else scale_direction (1.0 / length) direction
+       else scale_direction (1.0 ÷ length) direction
 
 move_point :
   {space : coordinate_space} →
@@ -157,8 +157,8 @@ clip_to_unit_sphere
          then OutsideClip
          else
            let discriminant_root = sqrt discriminant
-               first = ((-b) - discriminant_root) / (2.0 * a)
-               second = ((-b) + discriminant_root) / (2.0 * a)
+               first = ((-b) - discriminant_root) ÷ (2.0 * a)
+               second = ((-b) + discriminant_root) ÷ (2.0 * a)
                lower = if first ≤ second then first else second
                upper = if first ≤ second then second else first
            in VisibleInterval (Between lower upper)
@@ -278,7 +278,7 @@ first_level_set_hit surface ray (Between lower upper) =
       else
         let sample_count : Number
             sample_count = 128
-            step = (upper - lower) / cast sample_count
+            step = (upper - lower) ÷ cast sample_count
             lower_value =
               value_relative_to_level surface (point_on_ray ray lower)
         in search_level_set_segments
@@ -626,7 +626,7 @@ hydrogen_2p_x_emission (Point x y z) =
            square physical_z)
       density =
         square physical_x *
-        exp (-radius) /
+        exp (-radius) ÷
         (32.0 * pauli_pi)
       phase_color =
         if physical_x < 0.0
@@ -671,7 +671,7 @@ simpson_orbital_integral
               right_emission)
         panel =
           scale_color
-            (atom_radius_in_bohr * half_step / 3.0)
+            (atom_radius_in_bohr * half_step ÷ 3.0)
             weighted
   in add_colors
        panel
@@ -702,7 +702,7 @@ trace_atom_interval
     let panel_count : Number
         panel_count = 24
         half_step =
-          (upper - lower) /
+          (upper - lower) ÷
           (2.0 * cast panel_count)
         integrated =
           simpson_orbital_integral
@@ -749,7 +749,7 @@ vertical_half_extent = 1.08
 horizontal_half_extent : Double
 horizontal_half_extent =
   vertical_half_extent *
-  cast image_width /
+  cast image_width ÷
   cast image_height
 
 pixel_coordinate :
@@ -760,7 +760,7 @@ pixel_coordinate :
 pixel_coordinate index count half_extent =
   (-half_extent) +
   2.0 * half_extent *
-  (cast index + 0.5) /
+  (cast index + 0.5) ÷
   cast count
 
 channel_to_byte : Double → Int
