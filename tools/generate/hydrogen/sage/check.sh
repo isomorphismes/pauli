@@ -83,16 +83,16 @@ then
     exit 1
 fi
 
-if ! command -v cc >/dev/null 2>&1; then
+if [ -z "${ICK:-}" ] || [ ! -x "$ICK" ]; then
     printf \
-        '%bFAIL%b: a C99 compiler is required for the polar F64 receipt check.\n' \
+        '%bFAIL%b: set ICK to the pinned native ICK compiler for the polar F64 receipt check.\n' \
         "$red" \
         "$reset" \
         >&2
     exit 1
 fi
 
-cc \
+"$ICK" -fno-link-libatomic \
     -std=c99 \
     -O2 \
     -Wall \
@@ -106,7 +106,7 @@ cc \
 "$temporary_directory/check_polar_f64_runtime" \
     "$temporary_directory/polar_f64_receipts.tsv"
 
-cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
+"$ICK" -fno-link-libatomic -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
     -I "$temporary_directory" -I android/native \
     android/native/check_hydrogen_renderer.c \
     android/native/pauli_orbital.c android/native/pauli_volume_image.c \

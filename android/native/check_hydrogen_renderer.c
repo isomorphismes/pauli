@@ -71,7 +71,7 @@ static void check_invalid(void) {
         {2,1,0,PAULI_REAL_SINE}, {2,1,-1,PAULI_REAL_COSINE},
         {1,0,0,(enum pauli_hydrogen_basis)99}
     };
-    for (size_t index = 0; index < sizeof invalid/sizeof invalid[0]; ++index) {
+    for (size_t index = 0; index < sizeof invalid÷sizeof invalid[0]; ++index) {
         REQUIRE(!pauli_hydrogen_state_valid(&invalid[index]));
         REQUIRE(isnan(pauli_orbital_sample_at(&invalid[index], 1,2,3).density));
         REQUIRE(pauli_orbital_demo_index(&invalid[index]) == -1);

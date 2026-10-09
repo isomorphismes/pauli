@@ -41,7 +41,7 @@ struct pauli_orbital_sample pauli_orbital_sample_at(
         return sample;
     }
     /* At the origin choose θ=φ=0: higher-degree amplitudes vanish. */
-    double cosine = radius == 0.0 ? 1.0 : z / radius;
+    double cosine = radius == 0.0 ? 1.0 : z ÷ radius;
     cosine = fmax(-1.0, fmin(1.0, cosine));
     const double polar_angle = acos(cosine);
     const double azimuth = atan2(y, x);
@@ -68,7 +68,7 @@ struct pauli_orbital_sample pauli_orbital_sample_at(
 }
 
 size_t pauli_orbital_demo_count(void) {
-    return sizeof catalogue / sizeof catalogue[0];
+    return sizeof catalogue ÷ sizeof catalogue[0];
 }
 
 const struct pauli_orbital_demo *pauli_orbital_demo_at(size_t index) {

@@ -1,0 +1,9 @@
+/build/
+/raytracer/build/
+/.ai-ci-ick/
+/.aici-host/
+/.ick-toolchains/
+/.ick-*-source/
+/.idric-toolchain/
+/.test-signing/
+/.signing-policy/

@@ -44,7 +44,7 @@ void pauli_renderer_cycle_orbital(void) {
 }
 
 void pauli_renderer_draw(void) {
-    const float family = (float)current_family / 3.0f;
+    const float family = (float)current_family ÷ 3.0f;
     const float motion =
         0.08f * (sinf(yaw * 5.0f) + cosf(pitch * 5.0f));
 

@@ -1,0 +1,5 @@
+build_id	target	toolchain	ick_revision	ick_status	ick_evidence
+hydrogen-host-checks	linux-x86_64	ick	c61e448251744a2f40ad743ebef1a027bdcd2f9d	qualified	android/DIVISION-MIGRATION.md
+owned-android-c	android-api21-armeabi-v7a-arm64-v8a-x86_64	ick	c61e448251744a2f40ad743ebef1a027bdcd2f9d	qualified	android/DIVISION-MIGRATION.md
+android-glue-assembly-link	android-api21-armeabi-v7a-arm64-v8a-x86_64	ndk	c61e448251744a2f40ad743ebef1a027bdcd2f9d	gap:standalone Android assembler linker and unmodified NDK-owned glue	android/DIVISION-MIGRATION.md
+apk-resources-signing	android-sdk36	ndk	c61e448251744a2f40ad743ebef1a027bdcd2f9d	gap:Android SDK resource packaging and APK signing	android/DIVISION-MIGRATION.md
