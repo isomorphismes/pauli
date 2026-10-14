@@ -34,9 +34,14 @@ artifact.
 
 ## Why the core surface is generic
 
-Christian Stussak's jsurf/SURFER renderer is an important reference point,
-including work associated with the Mathematisches Forschungsinstitut
-Oberwolfach.  Several of its concepts remain explicit here:
+**Algorithmic reference: Christian Stussak's original
+[`jsurf` ray tracer](https://github.com/IMAGINARY/jsurf)**, written for
+[IMAGINARY's SURFER](https://www.imaginary.org/program/surfer) at the
+Mathematisches Forschungsinstitut Oberwolfach. His implementation is the
+specific reference for the distinction between camera/clipping/surface
+coordinates, ray parameter preservation, and prepared algebraic derivatives.
+These are not being presented as original inventions of Pauli. Several of
+Stussak's design concepts remain explicit here:
 
 - camera space, clipping space, and surface space are different;
 - their rays share one parameter;
@@ -62,9 +67,14 @@ Two representations are currently described in `RayTracerTypes.idric`:
 
 The runnable implementation currently uses `LevelSetSurface Double`.  It
 samples the clipped ray in 128 ordered segments and bisects the first sign
-change for 28 steps.  That is a practical first level-set intersector, not an
-equivalent translation of SURFER's Descartes root finder: a pure tangency or a
+change for 28 steps. This is **independent Idriç code informed by SURFER's
+architecture**, not a copy of Stussak's `jsurf` implementation or an
+equivalent translation of his Descartes root finder: a pure tangency or a
 sufficiently narrow pair of crossings can be missed.
+
+Unlike the [Algebraic Variety Explorer Android port](https://github.com/isomorphismes/algebraic-variety-explorer-mobile),
+which includes Stussak's **actual** original Java `jsurf` code, Pauli uses
+this implementation only as an explicit algorithmic reference.
 
 ## Numerical representation
 
