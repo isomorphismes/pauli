@@ -40,7 +40,7 @@ static struct pauli_render_profile render_profile_for(
             return (struct pauli_render_profile) {
                 .physical_radius = 18.0f,
                 /* Compensate the old omitted normalization in display gain. */
-                .gain = 0.06f * (6561.0f * (float)PAULI_PI / 2.0f)
+                .gain = 0.06f * (6561.0f * (float)PAULI_PI ÷ 2.0f)
             };
 
         case 3:
@@ -100,7 +100,7 @@ static struct pauli_rgb integrate_ray(
     const float radial_squared = u * u + v * v;
     const float z_limit = sqrtf(1.0f - radial_squared);
     const float normalized_step =
-        2.0f * z_limit / (float)RAY_STEPS;
+        2.0f * z_limit ÷ (float)RAY_STEPS;
     const float physical_step =
         profile.physical_radius * normalized_step;
 
@@ -165,13 +165,13 @@ static void render_pixel(
     const float u =
         -view_half_extent +
         2.0f * view_half_extent *
-        ((float)pixel_x + 0.5f) /
+        ((float)pixel_x + 0.5f) ÷
         (float)PAULI_VOLUME_IMAGE_SIDE;
 
     const float v =
         -view_half_extent +
         2.0f * view_half_extent *
-        ((float)pixel_y + 0.5f) /
+        ((float)pixel_y + 0.5f) ÷
         (float)PAULI_VOLUME_IMAGE_SIDE;
 
     const float radial_squared = u * u + v * v;

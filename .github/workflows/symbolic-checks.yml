@@ -2,36 +2,15 @@ name: hydrogen checks
 
 on:
   pull_request:
-    paths:
-      - "hydrogen.html"
-      - "hydrogen.ipynb"
-      - "books.html"
-      - "books/**"
-      - "tools/generate/hydrogen/**"
-      - "runtime/**"
-      - "android/native/**"
-      - ".github/actions/hydrogen-f64/**"
-      - ".github/workflows/symbolic-checks.yml"
   push:
-    branches:
-      - main
-    paths:
-      - "hydrogen.html"
-      - "hydrogen.ipynb"
-      - "books.html"
-      - "books/**"
-      - "tools/generate/hydrogen/**"
-      - "runtime/**"
-      - "android/native/**"
-      - ".github/actions/hydrogen-f64/**"
-      - ".github/workflows/symbolic-checks.yml"
+    branches: [main]
 
 jobs:
   hydrogen:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
@@ -74,7 +53,7 @@ jobs:
         uses: ./.github/actions/hydrogen-f64
 
       - name: Retain checked input and receipts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pauli-checked-hydrogen
           path: build/generated/

@@ -139,10 +139,12 @@ def c_expression(expression):
         )
     )
 
+    # This is a pure arithmetic expression: no comments, strings or directives.
+    # Keep SymPy's operation order and use the ICK frontend's division spelling.
     return sp.ccode(
         expression,
         standard="C99",
-    )
+    ).replace("/", "÷")
 
 
 def render_function(

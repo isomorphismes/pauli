@@ -282,11 +282,11 @@ void pauli_gles_image_draw(void) {
 
     if (current_width < current_height) {
         scale_y =
-            (float)current_width /
+            (float)current_width ÷
             (float)current_height;
     } else if (current_height < current_width) {
         scale_x =
-            (float)current_height /
+            (float)current_height ÷
             (float)current_width;
     }
 
