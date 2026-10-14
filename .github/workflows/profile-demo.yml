@@ -1,0 +1,115 @@
+name: Pauli orbital profile demo
+
+on:
+  push:
+    branches:
+      - fix/pauli-profile-demo-2026-10-13
+    paths:
+      - tools/profile_turntable.c
+      - .github/workflows/profile-demo.yml
+  pull_request:
+    paths:
+      - tools/profile_turntable.c
+      - .github/workflows/profile-demo.yml
+
+permissions:
+  contents: write
+
+jobs:
+  recorded-turntable:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out Pauli's actual renderer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Generate and check the bounded hydrogen evaluator
+        uses: ./.github/actions/hydrogen-f64
+
+      - name: Check out pinned Kitchen movie assembler
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/kitchen
+          ref: df14daf8cc612283ea210f206f0097a31db122a0
+          path: .kitchen
+          sparse-checkout: tasks/movie-from-stills
+
+      - name: Render real 2p_x orbital frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/profile-frames
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic \
+            -I build/generated -I android/native \
+            tools/profile_turntable.c \
+            android/native/pauli_orbital.c \
+            android/native/pauli_volume_image.c \
+            android/native/pauli_color.c \
+            -lm -o build/profile_turntable
+          build/profile_turntable build/profile-frames | tee build/profile-demo.txt
+          test "$(find build/profile-frames -maxdepth 1 -name 'frame-*.ppm' | wc -l)" -eq 32
+          if cmp -s build/profile-frames/frame-000000.ppm \
+            build/profile-frames/frame-000008.ppm; then
+            echo 'Camera rotation produced identical frames' >&2
+            exit 1
+          fi
+
+      - name: Install FFmpeg if missing
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+
+      - name: Assemble recording using Kitchen and produce GIF preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh .kitchen/tasks/movie-from-stills/build.sh \
+            'build/profile-frames/frame-%06d.ppm' 8 \
+            build/pauli-2px-turntable.mp4
+          ffmpeg -nostdin -hide_banner -loglevel error -y \
+            -i build/pauli-2px-turntable.mp4 \
+            -filter_complex '[0:v]fps=8,scale=320:320:flags=bilinear,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3' \
+            -loop 0 build/pauli-2px-turntable-preview.gif
+          test -s build/pauli-2px-turntable.mp4
+          test -s build/pauli-2px-turntable-preview.gif
+          count="$(ffprobe -v error -count_frames -select_streams v:0 \
+            -show_entries stream=nb_read_frames -of default=nw=1:nk=1 \
+            build/pauli-2px-turntable.mp4)"
+          test "$count" = 32
+          sha256sum build/pauli-2px-turntable.mp4 \
+            build/pauli-2px-turntable-preview.gif
+
+      - name: Retain recorded media and source receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: pauli-native-renderer-profile-demo
+          path: |
+            build/pauli-2px-turntable.mp4
+            build/pauli-2px-turntable-preview.gif
+            build/profile-demo.txt
+          if-no-files-found: error
+
+      - name: Publish reviewable media on the demo branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/fix/pauli-profile-demo-2026-10-13'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p media
+          cp build/pauli-2px-turntable.mp4 media/
+          cp build/pauli-2px-turntable-preview.gif media/
+          sha256sum media/pauli-2px-turntable.mp4 \
+            media/pauli-2px-turntable-preview.gif \
+            > media/pauli-2px-turntable.sha256
+          git rev-parse HEAD > media/pauli-2px-turntable.source-commit.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add media/pauli-2px-turntable.mp4 \
+            media/pauli-2px-turntable-preview.gif \
+            media/pauli-2px-turntable.sha256 \
+            media/pauli-2px-turntable.source-commit.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Publish Pauli native-renderer profile demo [skip ci]'
+          git push origin HEAD:fix/pauli-profile-demo-2026-10-13
