@@ -29,15 +29,45 @@ abi=${ANDROID_ABI:-armeabi-v7a}
 api=${ANDROID_API:-21}
 
 case "$abi" in
-    armeabi-v7a) target=armv7a-linux-androideabi ;;
-    arm64-v8a) target=aarch64-linux-android ;;
-    x86) target=i686-linux-android ;;
-    x86_64) target=x86_64-linux-android ;;
+    armeabi-v7a)
+        target=armv7a-linux-androideabi
+        ick_target=arm-linux-gnueabi
+        header_target=arm-linux-androideabi
+        ick_flags=(-march=armv7-a -mthumb -mfpu=neon -mfloat-abi=softfp)
+        ;;
+    arm64-v8a)
+        target=aarch64-linux-android
+        ick_target=aarch64-linux-gnu
+        header_target=aarch64-linux-android
+        ick_flags=(-ffixed-x18)
+        ;;
+    x86)
+        target=i686-linux-android
+        ick_target=i686-linux-gnu
+        header_target=i686-linux-android
+        ick_flags=(-march=i686 -mssse3 -mfpmath=sse -mstackrealign)
+        ;;
+    x86_64)
+        target=x86_64-linux-android
+        ick_target=x86_64-linux-gnu
+        header_target=x86_64-linux-android
+        ick_flags=(-march=x86-64-v2 -mno-avx -mno-movbe)
+        ;;
     *)
         printf 'unsupported Android ABI: %s\n' "$abi" >&2
         exit 1
         ;;
 esac
+
+ick=${ICK_CC:-${ICK_ROOT:+$ICK_ROOT/bin/${ick_target}-gcc}}
+[[ -n $ick && -x $ick ]] || {
+    printf 'ICK compiler is required; set ICK_CC or ICK_ROOT for %s.\n' "$ick_target" >&2
+    exit 1
+}
+[[ $("$ick" -dumpmachine) == "$ick_target" ]] || {
+    printf 'ICK compiler does not target %s.\n' "$ick_target" >&2
+    exit 1
+}
 
 ndk=${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}
 if [[ -z $ndk ]]; then
@@ -102,6 +132,27 @@ case "$abi" in
         ;;
 esac
 
+owned_objects=()
+builtin_include=$("$ick" -print-file-name=include)
+[[ -d $builtin_include ]] || {
+    printf 'ICK builtin headers are missing: %s\n' "$builtin_include" >&2
+    exit 1
+}
+for source in "$repo_root/android/native/pauli_android.c" "${renderer_sources[@]}"; do
+    object="${output%.so}.$(basename -- "${source%.c}").o"
+    "$ick" "${ick_flags[@]}" -std=c11 -O2 -fPIC -Wall -Wextra -Werror \
+        -nostdinc -isystem "$builtin_include" \
+        --sysroot="$toolchain/sysroot" \
+        -isystem "$toolchain/sysroot/usr/include" \
+        -isystem "$toolchain/sysroot/usr/include/$header_target" \
+        -D__ANDROID__ -D__ANDROID_API__="$api" -D__ANDROID_MIN_SDK_VERSION__="$api" \
+        -DBIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD \
+        -I "$glue_dir" -I "$repo_root/android/native" -I "$generated_directory" \
+        -S "$source" -o "$object.s"
+    "$clang" "${ick_flags[@]}" -c "$object.s" -o "$object"
+    owned_objects+=("$object")
+done
+
 "$clang" \
     -std=c11 \
     -O2 \
@@ -113,9 +164,8 @@ esac
     -I "$glue_dir" \
     -I "$repo_root/android/native" \
     -I "$generated_directory" \
-    "$repo_root/android/native/pauli_android.c" \
     "$glue_object" \
-    "${renderer_sources[@]}" \
+    "${owned_objects[@]}" \
     -Wl,--no-undefined \
     -Wl,-soname,libpauli.so \
     "${link_alignment[@]}" \
@@ -132,4 +182,6 @@ grep -Fq 'android_main' <<<"$symbols"
 
 printf 'native ABI              %s\n' "$abi"
 printf 'native API floor        %s\n' "$api"
+printf 'owned C frontend        %s\n' "$ick"
+printf 'NDK glue/assembly/link  %s\n' "$clang"
 printf 'native library          %s\n' "$output"

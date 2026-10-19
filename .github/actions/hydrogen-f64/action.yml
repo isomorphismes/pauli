@@ -3,10 +3,29 @@ description: Deterministically generate the bounded native evaluator and check t
 runs:
   using: composite
   steps:
+    - name: Build and qualify the pinned host C frontend
+      id: ick
+      uses: isomorphisms/ai-ci/ick-host@903b2cb27ea572c9c6cb2ffa9f39e0fbf06ec9f8
+    - name: Check out the stage contract
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        repository: isomorphisms/ai-ci
+        ref: 903b2cb27ea572c9c6cb2ffa9f39e0fbf06ec9f8
+        path: .aici-host
+        sparse-checkout: |
+          src/aici.c
+          contracts/build-toolchain-v0.contract.tsv
+        persist-credentials: false
+    - name: Verify the declared compiler stages
+      shell: bash
+      run: make -f ci/Makefile verify ICK="${{ steps.ick.outputs.compiler }}"
     - name: Generate and check native hydrogen input
       shell: python
+      env:
+        ICK: ${{ steps.ick.outputs.compiler }}
       run: |
         import hashlib
+        import os
         from pathlib import Path
         import subprocess
 
@@ -34,7 +53,7 @@ runs:
         header = (output / "hydrogen_spdf_f64.h").read_text()
         if any(text in header for text in ["hypot", "atan2", ".real", ".imaginary"]):
             raise RuntimeError("rectangular complex machinery in generated evaluator")
-        flags = ["cc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", "-pedantic",
+        flags = [os.environ["ICK"], "-fno-link-libatomic", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", "-pedantic",
                  "-I", str(output), "-I", "android/native"]
         subprocess.run(flags + [f"{source}/check_polar_f64_runtime.c", "-lm", "-o",
                                str(output / "check_polar_f64_runtime")], check=True)

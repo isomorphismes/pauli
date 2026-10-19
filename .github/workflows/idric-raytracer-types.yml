@@ -6,15 +6,8 @@ concurrency:
 
 on:
   pull_request:
-    paths:
-      - "raytracer/**"
-      - ".github/workflows/idric-raytracer-types.yml"
   push:
-    branches:
-      - main
-    paths:
-      - "raytracer/**"
-      - ".github/workflows/idric-raytracer-types.yml"
+    branches: [main]
 
 jobs:
   render:
@@ -30,14 +23,14 @@ jobs:
       - name: Check out pinned Idriç compiler
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
-          repository: dilapidated-shed/Idric
-          ref: 51e3892d4de59943e42e65c60a9814aba792c5d4
+          repository: isomorphisms/Idric
+          ref: 94dfd99bd3e376507fedc8611053b7173b2519f0
           path: .idric-toolchain
           persist-credentials: false
 
       - name: Restore pinned Idriç bootstrap
         id: idric-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             .idric-toolchain/_/.tools
@@ -50,7 +43,7 @@ jobs:
             .idric-toolchain/_/libs/contrib/build
             .idric-toolchain/_/libs/test/build
             .idric-toolchain/_/libs/papers/build
-          key: idric-linux-51e3892d4de59943e42e65c60a9814aba792c5d4
+          key: idric-linux-94dfd99bd3e376507fedc8611053b7173b2519f0
 
       - name: Bootstrap pinned Idriç
         if: steps.idric-cache.outputs.cache-hit != 'true'
@@ -58,7 +51,7 @@ jobs:
 
       - name: Save pinned Idriç bootstrap
         if: steps.idric-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             .idric-toolchain/_/.tools
@@ -71,7 +64,7 @@ jobs:
             .idric-toolchain/_/libs/contrib/build
             .idric-toolchain/_/libs/test/build
             .idric-toolchain/_/libs/papers/build
-          key: idric-linux-51e3892d4de59943e42e65c60a9814aba792c5d4
+          key: idric-linux-94dfd99bd3e376507fedc8611053b7173b2519f0
 
       - name: Typecheck executable through Idriç handoff
         run: |
@@ -103,7 +96,7 @@ jobs:
           printf 'pixels=%s distinct=%s\n' "$pixel_count" "$distinct_pixels"
 
       - name: Retain rendered frame
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pauli-idric-raytracer-frame
           path: ${{ runner.temp }}/pauli-raytracer.ppm
