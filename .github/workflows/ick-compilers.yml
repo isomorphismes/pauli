@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: isomorphisms/ai-ci
-          ref: 903b2cb27ea572c9c6cb2ffa9f39e0fbf06ec9f8
+          ref: f6d825d15cd3c0c34ae1b43240a463ff5d343090
           path: .ai-ci-ick
           persist-credentials: false
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
@@ -28,7 +28,7 @@ jobs:
       - name: Install the declared Android NDK
         run: sdkmanager "ndk;29.0.14206865"
       - name: Build and qualify the ICK frontend
-        uses: isomorphisms/ai-ci/ick-android@903b2cb27ea572c9c6cb2ffa9f39e0fbf06ec9f8
+        uses: isomorphisms/ai-ci/ick-android@f6d825d15cd3c0c34ae1b43240a463ff5d343090
         with:
           abi: ${{ matrix.abi }}
           ndk: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865
