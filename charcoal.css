@@ -1,0 +1,14 @@
+:root {
+  color-scheme: dark;
+  --charcoal-background: #212121;
+  --charcoal-surface: #2F2F2F;
+  --charcoal-interactive: #383838;
+  --charcoal-border: #454545;
+  --charcoal-text: #F4F4F4;
+  --charcoal-secondary: #B4B4B4;
+  --charcoal-disabled: #858585;
+  --charcoal-selection: #595959;
+}
+html { background: var(--charcoal-background); color: var(--charcoal-text); }
+::selection { background: var(--charcoal-selection); color: var(--charcoal-text); }
+:focus-visible { outline: 2px solid var(--charcoal-secondary); outline-offset: 3px; }
