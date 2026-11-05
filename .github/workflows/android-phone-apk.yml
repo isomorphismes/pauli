@@ -84,6 +84,16 @@ jobs:
         with:
           packages: platform-tools
 
+      - name: Check out fixed shared charcoal launch resources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/android-NDK
+          ref: 38d6899706d855201239d86e1629e2620c0e8821
+          path: .charcoal
+          persist-credentials: false
+      - name: Stage shared resources with the existing fullscreen policy
+        run: cp -R .charcoal/native/presentation/res/. android/res/
+
       - name: Install Android build inputs
         run: |
           sdkmanager \

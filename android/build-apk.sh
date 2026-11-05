@@ -106,12 +106,15 @@ manifest_apk="$work/manifest.apk"
 unaligned="$work/unaligned.apk"
 aligned="$work/aligned.apk"
 
+"$aapt2" compile --dir "$repo_root/android/res" -o "$work/resources.zip"
+
 "$aapt2" link \
     -I "$android_jar" \
     --manifest "$repo_root/android/AndroidManifest.xml" \
     --min-sdk-version 21 \
     --target-sdk-version 36 \
-    -o "$manifest_apk"
+    -o "$manifest_apk" \
+    "$work/resources.zip"
 
 cp "$manifest_apk" "$unaligned"
 (
